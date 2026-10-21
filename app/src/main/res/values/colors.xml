@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="offwhite">#DCDBDB</color>
+
+    <color name="colorPrimary">#0C102A</color>
+    <color name="text_pink">#B1254F</color>
+    <color name="text_aqua">#046D7A</color>
+    <color name="text_yellow">#B88A00</color>
+    <color name="text_green">#017166</color>
+    <color name="grey">#ADADAD</color>
+    <color name="greydark">#2A2A2A</color>
+    <color name="hint_color">#CFD1D1</color>
+    <color name="colorPrimaryDark">#000000</color>
+    <!-- <color name="colorPrimaryDark">#6B7AC3</color>-->
+    <color name="colorAccent">#FF3700B3</color>
+
+
+
+        <color name="screen_background">#F5F6FA</color>
+
+        <!-- Toolbar gradient endpoints (used in bg_toolbar_gradient.xml) -->
+        <color name="toolbar_gradient_start">#123B54</color>
+        <color name="toolbar_gradient_end">#1E8FA6</color>
+
+        <!-- Text -->
+        <color name="text_primary">#1B1F27</color>
+        <color name="text_secondary">#8A8F99</color>
+        <color name="text_hint">#B0B4BD</color>
+
+        <!-- Summary card -->
+        <color name="summary_right_bg">#FCEFE4</color>
+        <color name="divider">#E7E9EF</color>
+        <color name="stroke_light">#E5E7EC</color>
+
+        <!-- Status dots -->
+        <color name="dot_purple">#8B5CF6</color>
+        <color name="dot_orange">#F59E0B</color>
+        <color name="dot_green">#22C55E</color>
+
+        <!-- Accent -->
+        <color name="accent_blue">#2563EB</color>
+
+        <!-- Status chip ("Created") -->
+        <color name="chip_status_bg">#E7ECFB</color>
+        <color name="chip_status_text">#3457D5</color>
+
+    <color name="screen_bg">#F5F5F5</color>
+    <color name="card_bg">#FFFFFF</color>
+    <color name="card_stroke">#E3E8EF</color>
+
+    <color name="navy">#0B3A75</color>
+    <color name="toolbar_start">#0B3A75</color>
+    <color name="toolbar_end">#1B8E96</color>
+    <color name="progress_track">#DEE0E4</color>
+    <color name="progress_fill">#1B8E96</color>
+    <color name="summary_bg">#FDF3EC</color>
+
+    <color name="dot_red">#E5484D</color>
+
+
+
+    <color name="teal_accent">#1B8E96</color>
+    <color name="status_created_bg">#ECEEFB</color>
+    <color name="status_created_text">#4B5BD6</color>
+    <color name="status_pickup_bg">#F1E7FB</color>
+    <color name="status_pickup_text">#9B5DE5</color>
+
+
+
+
+
+    <color name="action_blue">#0B3B6F</color>
+    <color name="progress_bg">#E2E5E9</color>
+
+    <color name="status_short">#F5A623</color>
+    <color name="status_excess">#8E9AF0</color>
+    <color name="status_damage">#E5484D</color>
+    <color name="stat_box_bg">#FAFAFB</color>
+    <color name="scanned_green">#1E9E6A</color>
+    <color name="chip_selected_bg">#E6F8F8</color>
+    <color name="chip_unselected_stroke">#D5DAE1</color>
+</resources>

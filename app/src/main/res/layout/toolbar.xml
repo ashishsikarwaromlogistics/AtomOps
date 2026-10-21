@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+
+   <data>
+
+   </data>
+
+   <LinearLayout
+       android:layout_width="match_parent"
+       android:layout_height="@dimen/_35sdp"
+       android:orientation="horizontal"
+       android:padding="@dimen/_4sdp"
+       android:gravity="center_vertical"
+       android:background="@drawable/toolbar">
+
+      <ImageView
+          android:id="@+id/imgback"
+          android:layout_width="@dimen/_44sdp"
+          android:layout_height="@dimen/_18sdp"
+          android:src="@drawable/baseline_arrow_back_ios_24" />
+   </LinearLayout>
+</layout>

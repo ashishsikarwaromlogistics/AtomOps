@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ClaudeCodeEditorTabs">
+    <option name="activeSessionId" value="7b9b05cd-dd5f-4801-b24b-99978b70c996" />
+    <option name="openSessionIds">
+      <list>
+        <option value="07264e94-77b4-4184-ad67-09bbc38c2879" />
+        <option value="0ccfad7e-1e02-4bc5-9122-b8501cd4d086" />
+        <option value="3879323b-2245-4fba-aaff-4b653032b689" />
+        <option value="cb55d0d7-d99e-415a-b508-fe6bde5e4fb5" />
+        <option value="7b9b05cd-dd5f-4801-b24b-99978b70c996" />
+      </list>
+    </option>
+    <option name="sessionPaths">
+      <map>
+        <entry key="07264e94-77b4-4184-ad67-09bbc38c2879" value="/sessions/01533896-b4ce-4d3d-84b1-b4730125b94c" />
+        <entry key="0ccfad7e-1e02-4bc5-9122-b8501cd4d086" value="/sessions/ca799a5e-fe79-4e3e-8b72-9724c09ca19a" />
+        <entry key="3879323b-2245-4fba-aaff-4b653032b689" value="/sessions/new" />
+        <entry key="7b9b05cd-dd5f-4801-b24b-99978b70c996" value="/sessions/1d4e6000-a91c-42b0-b5a9-393750195fb6" />
+        <entry key="cb55d0d7-d99e-415a-b508-fe6bde5e4fb5" value="/sessions/d7831d5d-9ec1-455f-8eaa-0db08b9dc1aa" />
+      </map>
+    </option>
+    <option name="sessionTitles">
+      <map>
+        <entry key="07264e94-77b4-4184-ad67-09bbc38c2879" value="Add textView Login Credentials below this add 2 ed" />
+        <entry key="0ccfad7e-1e02-4bc5-9122-b8501cd4d086" value="chech why image is not showing" />
+        <entry key="3879323b-2245-4fba-aaff-4b653032b689" value="Claude Code" />
+        <entry key="7b9b05cd-dd5f-4801-b24b-99978b70c996" value="import androidx.compose.material.icons.Icons impor" />
+        <entry key="cb55d0d7-d99e-415a-b508-fe6bde5e4fb5" value="rles.keep is it similer to proguard rules" />
+      </map>
+    </option>
+  </component>
+</project>

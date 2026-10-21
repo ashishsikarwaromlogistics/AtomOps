@@ -1,0 +1,564 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/main"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#F5F7FA"
+        tools:context=".activities.TripsDetails">
+
+        <!-- ================= TOP BAR ================= -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/topBar"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:background="@drawable/toolbar"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/ivBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:padding="8dp"
+                android:src="@drawable/baseline_arrow_back_ios_24"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="@android:color/white" />
+
+            <ImageView
+                android:id="@+id/ivSearch"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="12dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_search"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/ivProfile"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="@android:color/white" />
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/ivProfile"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="12dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_profile"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <ScrollView
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:fillViewport="true"
+            android:scrollbars="none"
+            app:layout_constraintBottom_toTopOf="@id/btnStartLoading"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/topBar">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <!-- ================= TRIP HEADER CARD ================= -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="@android:color/white"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp"
+                    app:strokeColor="#E3E8EF"
+                    app:strokeWidth="1dp">
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="16dp">
+
+                        <ImageView
+                            android:id="@+id/ivTruck"
+                            android:layout_width="@dimen/_25sdp"
+                            android:layout_height="@dimen/_25sdp"
+                            android:src="@drawable/ic_truck"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <TextView
+                            android:id="@+id/tvTripId"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:text="TRIP123456725"
+                            android:textColor="#111827"
+                            android:textSize="@dimen/_11ssp"
+                            android:textStyle="bold"
+                            app:layout_constraintStart_toEndOf="@id/ivTruck"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <TextView
+                            android:id="@+id/tvTripDate"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="14-01-2025, 14:30"
+                            android:textColor="#374151"
+                            android:textSize="@dimen/_9ssp"
+                            app:layout_constraintStart_toStartOf="@id/tvTripId"
+                            app:layout_constraintTop_toBottomOf="@id/tvTripId" />
+
+                        <TextView
+                            android:id="@+id/tvTripStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_status_chip"
+                            android:paddingStart="@dimen/_9sdp"
+                            android:paddingTop="6dp"
+                            android:paddingEnd="@dimen/_10sdp"
+                            android:paddingBottom="@dimen/_4sdp"
+                            android:text="Created"
+                            android:textColor="#4F46E5"
+                            android:textSize="@dimen/_10ssp"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- ================= DETAILS CARD ================= -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    app:cardBackgroundColor="#FAFBFD"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="#E3E8EF"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <!-- ===== Route details ===== -->
+                        <androidx.constraintlayout.widget.ConstraintLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/curved_rect"
+                            android:padding="16dp">
+
+                            <TextView
+                                android:id="@+id/tvRouteTitle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="ROUTE DETAILS"
+                                android:textColor="#4B5563"
+                                android:textSize="@dimen/_9ssp"
+                                android:textStyle="bold"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toTopOf="parent" />
+
+                            <!-- dashed vertical line, drawn behind the icons -->
+                            <View
+                                android:id="@+id/routeLine"
+                                android:layout_width="2dp"
+                                android:layout_height="0dp"
+                                android:layerType="software"
+                                android:background="@drawable/bg_dashed_vertical_line"
+                                app:layout_constraintBottom_toTopOf="@id/ivDestination"
+                                app:layout_constraintEnd_toEndOf="@id/ivOrigin"
+                                app:layout_constraintStart_toStartOf="@id/ivOrigin"
+                                app:layout_constraintTop_toBottomOf="@id/ivOrigin" />
+
+                            <!-- Origin -->
+                            <ImageView
+                                android:id="@+id/ivOrigin"
+                                android:layout_width="@dimen/_20sdp"
+                                android:layout_height="@dimen/_20sdp"
+                                android:layout_marginTop="@dimen/_14sdp"
+                                android:src="@drawable/outline_route_24"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toBottomOf="@id/tvRouteTitle" />
+
+                            <TextView
+                                android:id="@+id/tvOriginCode"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="16dp"
+                                android:text="MUM-00018"
+                                android:textColor="#111827"
+                                android:textSize="@dimen/_11ssp"
+                                android:textStyle="bold"
+                                app:layout_constraintStart_toEndOf="@id/ivOrigin"
+                                app:layout_constraintTop_toTopOf="@id/ivOrigin" />
+
+                            <TextView
+                                android:id="@+id/tvOriginLabel"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Origin"
+                                android:textColor="#4B5563"
+                                android:textSize="@dimen/_9ssp"
+                                app:layout_constraintStart_toStartOf="@id/tvOriginCode"
+                                app:layout_constraintTop_toBottomOf="@id/tvOriginCode" />
+
+                            <!-- Intermediate -->
+                            <ImageView
+                                android:id="@+id/ivIntermediate"
+                                android:layout_width="@dimen/_20sdp"
+                                android:layout_height="@dimen/_20sdp"
+                                android:layout_marginTop="40dp"
+                                android:src="@drawable/outline_route_24"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toBottomOf="@id/tvOriginLabel" />
+
+                            <TextView
+                                android:id="@+id/tvIntermediateCode"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="16dp"
+                                android:text="PUN-00019"
+                                android:textColor="#111827"
+                                android:textSize="@dimen/_11ssp"
+                                android:textStyle="bold"
+                                app:layout_constraintStart_toEndOf="@id/ivIntermediate"
+                                app:layout_constraintTop_toTopOf="@id/ivIntermediate" />
+
+                            <TextView
+                                android:id="@+id/tvIntermediateLabel"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Intermediate"
+                                android:textColor="#4B5563"
+                                android:textSize="@dimen/_9ssp"
+                                app:layout_constraintStart_toStartOf="@id/tvIntermediateCode"
+                                app:layout_constraintTop_toBottomOf="@id/tvIntermediateCode" />
+
+                            <TextView
+                                android:id="@+id/tvIntermediateStatus"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/bg_status_chip"
+                                android:paddingStart="12dp"
+                                android:paddingTop="4dp"
+                                android:paddingEnd="@dimen/_8sdp"
+                                android:paddingBottom="4dp"
+                                android:text="Created"
+                                android:textColor="#4F46E5"
+                                android:textSize="@dimen/_9ssp"
+                                app:layout_constraintBottom_toBottomOf="@id/tvIntermediateLabel"
+                                app:layout_constraintEnd_toEndOf="parent"
+                                app:layout_constraintTop_toTopOf="@id/tvIntermediateCode" />
+
+                            <!-- Destination -->
+                            <ImageView
+                                android:id="@+id/ivDestination"
+                                android:layout_width="@dimen/_20sdp"
+                                android:layout_height="@dimen/_20sdp"
+                                android:layout_marginTop="40dp"
+                                android:src="@drawable/outline_route_24"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toBottomOf="@id/tvIntermediateLabel" />
+
+                            <TextView
+                                android:id="@+id/tvDestinationCode"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="16dp"
+                                android:text="DEL-00020"
+                                android:textColor="#111827"
+                                android:textSize="@dimen/_11ssp"
+                                android:textStyle="bold"
+                                app:layout_constraintStart_toEndOf="@id/ivDestination"
+                                app:layout_constraintTop_toTopOf="@id/ivDestination" />
+
+                            <TextView
+                                android:id="@+id/tvDestinationLabel"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Destination"
+                                android:textColor="#4B5563"
+                                android:textSize="@dimen/_9ssp"
+                                app:layout_constraintStart_toStartOf="@id/tvDestinationCode"
+                                app:layout_constraintTop_toBottomOf="@id/tvDestinationCode" />
+
+                            <TextView
+                                android:id="@+id/tvDestinationStatus"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/bg_status_chip"
+                                android:paddingStart="12dp"
+                                android:paddingTop="4dp"
+                                android:paddingEnd="12dp"
+                                android:paddingBottom="4dp"
+                                android:text="Created"
+                                android:textColor="#4F46E5"
+                                android:textSize="@dimen/_9ssp"
+                                app:layout_constraintBottom_toBottomOf="@id/tvDestinationLabel"
+                                app:layout_constraintEnd_toEndOf="parent"
+                                app:layout_constraintTop_toTopOf="@id/tvDestinationCode" />
+                        </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        <!-- ===== Service / Dock / Vehicle ===== -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/_14sdp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <ImageView
+                                    android:layout_width="@dimen/_14sdp"
+                                    android:layout_height="@dimen/_14sdp"
+                                    android:src="@drawable/ic_service" />
+
+                                <TextView
+                                    android:id="@+id/tvService"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="8dp"
+                                    android:text="Service"
+                                    android:textColor="#374151"
+                                    android:textSize="@dimen/_10ssp" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <ImageView
+                                    android:layout_width="@dimen/_14sdp"
+                                    android:layout_height="@dimen/_14sdp"
+                                    android:src="@drawable/ic_dock" />
+
+                                <TextView
+                                    android:id="@+id/tvDock"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="@dimen/_4sdp"
+                                    android:text="Dock - 2A"
+                                    android:textColor="#374151"
+                                    android:textSize="@dimen/_10ssp" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1.2"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <ImageView
+                                    android:layout_width="@dimen/_14sdp"
+                                    android:layout_height="@dimen/_14sdp"
+                                    android:src="@drawable/ic_truck" />
+
+                                <TextView
+                                    android:id="@+id/tvVehicleNo"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="8dp"
+                                    android:text="DL14CC 1586"
+                                    android:textColor="#374151"
+                                    android:textSize="@dimen/_10ssp" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <!-- ===== Counts ===== -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/_18sdp"
+                            android:orientation="horizontal">
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Docket Count"
+                                    android:textColor="#374151"
+                                    android:textSize="@dimen/_10ssp" />
+
+                                <TextView
+                                    android:id="@+id/tvDocketCount"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="4dp"
+                                    android:text="10"
+                                    android:textColor="#111827"
+                                    android:textSize="@dimen/_10ssp" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Total Boxes"
+                                    android:textColor="#374151"
+                                    android:textSize="@dimen/_10ssp" />
+
+                                <TextView
+                                    android:id="@+id/tvTotalBoxes"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="4dp"
+                                    android:text="70"
+                                    android:textColor="#111827"
+                                    android:textSize="@dimen/_10ssp" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="end"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Total Boxes"
+                                    android:textColor="#374151"
+                                    android:textSize="@dimen/_10ssp" />
+
+                                <TextView
+                                    android:id="@+id/tvTotalBoxes2"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="4dp"
+                                    android:text="70"
+                                    android:textColor="#111827"
+                                    android:textSize="@dimen/_10ssp" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <!-- ===== Driver ===== -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/_14sdp"
+                            app:cardBackgroundColor="@android:color/white"
+                            app:cardCornerRadius="8dp"
+                            app:cardElevation="0dp"
+                            app:strokeColor="#E3E8EF"
+                            app:strokeWidth="1dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <com.google.android.material.imageview.ShapeableImageView
+                                    android:id="@+id/ivDriver"
+                                    android:layout_width="40dp"
+                                    android:layout_height="40dp"
+                                    android:layout_marginStart="12dp"
+                                    android:layout_marginTop="10dp"
+                                    android:layout_marginBottom="10dp"
+                                    android:scaleType="centerCrop"
+                                    style="@style/CircleImage"
+                                    android:src="@drawable/ic_profile"
+                                    app:shapeAppearanceOverlay="@style/CircleImage" />
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="12dp"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="DRIVER"
+                                        android:textColor="#374151"
+                                        android:textSize="@dimen/_8ssp" />
+
+                                    <TextView
+                                        android:id="@+id/tvDriverName"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="DRI12678 -  Ramesh Kumar"
+                                        android:textColor="#111827"
+                                        android:textSize="@dimen/_10ssp" />
+                                </LinearLayout>
+
+                                <FrameLayout
+                                    android:id="@+id/btnCall"
+                                    android:layout_width="64dp"
+                                    android:layout_height="60dp"
+                                    android:background="#F0FAFA"
+                                    android:foreground="?attr/selectableItemBackground">
+
+                                    <ImageView
+                                        android:layout_width="@dimen/_18sdp"
+                                        android:layout_height="@dimen/_18sdp"
+                                        android:layout_gravity="center"
+                                        android:src="@drawable/ic_call"
+                                        app:tint="#0F3D6B" />
+                                </FrameLayout>
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- ================= START LOADING BUTTON ================= -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStartLoading"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_marginStart="@dimen/_18sdp"
+            android:layout_marginEnd="@dimen/_18sdp"
+            android:layout_marginBottom="16dp"
+            android:text="Start Loading"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            app:backgroundTint="#003366"
+            android:textColor="@color/white"
+            app:cornerRadius="8dp"
+           android:background="#003366"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">AtomOps</string>
+    <string name="bottom_decoration_description">bottom image</string>
+    <string name="app_banner_description">banner\n\n</string>
+    <string name="trip_id_placeholder">Trip ID</string>
+    <string name="date_time_placeholder">Trip Time</string>
+    <string name="status_created">Created</string>
+    <string name="service">Service</string>
+    <string name="dock_placeholder">Dock</string>
+    <string name="vehicle_number_placeholder">Vehicle No.</string>
+    <string name="no_trips_found">No Trips Found</string>
+    <string name="cd_back">Back</string>
+    <string name="all_trips">All Trips</string>
+    <string name="cd_search">Search</string>
+    <string name="total_trips">Total Trips</string>
+    <string name="loading">Loading</string>
+    <string name="unloading">Unloading</string>
+    <string name="completed">Completed</string>
+    <string name="search_by_trip_id">Seacrh by Trip Id</string>
+    <string name="cd_filter">Filter</string>
+    <string name="cd_more_options">More Options</string>
+    <string name="route_placeholder">Route</string>
+</resources>

@@ -1,0 +1,57 @@
+package com.example.atomops
+
+class Constants {
+    companion object{
+        val PREF_NAME = "OMOPERATION"
+         val SAVE_OLL = "SAVE_OLL1"
+
+        val CNCREATION = "CNCREATION"
+        val PROFILE = "PROFILE"
+        val INVOICES = "INVOICES"
+        val IS_INCRYPT = "IS_INCRYPT"
+        val IN_DATE = "IN_DATE"
+        val OUT_DATE = "OUT_DATE"
+        val PUNCH_TIME = "PUNCH_TIME"
+        val PRINTER = "PRINTER"
+        val SENDDATA = "SENDDATA"
+        public const val JWTTOKEN = "JWTTOKEN"
+        public const val REFRESH = "REFRESH"
+        val BCODE = "BCODE"
+        val BAJAJ = "BAJAJ"
+        val bajajlist_with_realtion = "bajajlist_with_realtion"
+        val BNAME = "BNAME"
+        val EMPNAME = "EMPNAME"
+        val EMAIL = "EMAIL"
+        val ISLOGIN = "ISLOGIN" // ISLOGIN="0" not log in ISLOGIN="1"  log in
+        public const val ID = "ID"
+        public const val EMP_CODE = "EMP_CODE"
+        public const val EMP_ID = "EMP_ID"
+        public const val COMP_CODE = "COMP_CODE"
+        public const val EMP_PASS = "EMP_PASS"
+        val CUSERID = "CUSERID"
+        val CPASSWORD = "CPASSWORD"
+        val CSID = "CSID"
+        val STARTTIME = "STARTTIME"
+        val ENDTIME = "ENDTIME"
+        val g_key = "AIzaSyCQ_02yFiN5hTXt1xFIwiWoH1JMsMUF_8M"
+        val todaydate = "todaydate"
+        val MISDATA = "MISDATA"
+        var authorizationtoken =
+            "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWJqZWN0IjoiOTkgNDAxNDUgMTMwNiA0MDAwMDEiLCJpYXQiOjE3MTM0MTk2MjB9.VY-VIp3ky6rXiwGBnbAsTkzPNZtjipN-RnVPW7dF_vQ"
+
+
+        val TOBRANCH = "TOBRANCH"
+        val DRIVER_NAME = "DRIVER_NAME"
+        val DRIVERR_NUM = "DRIVERR_NUM"
+        val LORRY = "LORRY"
+        val GATE_IN_DATE = "GATE_IN_DATE"
+        val LOADINGPLAN = "LOADINGPLAN"
+        val DESTNATION = "DESTNATION"
+        val ODASTATION = "ODASTATION"
+        val AVR_GATE_NO = "AVR_GATE_NO"
+        val DOC_SCANNING = "DOC_SCANNING"
+        val AVR_CN_DATA = "AVR_CN_DATA"  //not is use
+
+
+    }
+}
