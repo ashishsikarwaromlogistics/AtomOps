@@ -1,6 +1,8 @@
 package com.example.atomops.networking
 import com.example.atomops.models.TokenMod
+import com.example.atomops.models.bulkids.BulkResp
 import com.example.atomops.models.findbox.FindBoxResp
+import com.example.atomops.models.loadtrip.LoadTripMod
 import com.example.atomops.models.login.LoginMod
 import com.example.atomops.models.login.LoginResp
 import com.example.atomops.models.password.ChangePassMod
@@ -108,7 +110,7 @@ interface ServiceInterface   {
     suspend fun bulkScan(
         @Header("Authorization") auth: String,
        @Body mod: Any
-    ): Response<TripDetailsResp>
+    ): Response<BulkResp>
 
 
     @POST("atom-scanning/api/v1/dockets/boxes/query")
@@ -124,7 +126,24 @@ interface ServiceInterface   {
        @Body mod: ChangePassMod
     ): Response<FindBoxResp>
 
+    @POST("atom-movement/api/v1/manifests/{manifestId}/loading/boxes/bulk")
+    suspend fun bulkLoadBoxes(
+        @Header("Authorization") auth: String,
+        @Path("manifestId") manifestId: String,
+        @Body mod: LoadTripMod
+    ): Response<FindBoxResp>
 
+
+    @GET("atom-commercial/api/v1/prqs")
+    suspend fun getPrqs(
+        @Header("Authorization") auth: String,
+        @Query("status") status: String,
+        @Query("pickupBranch") pickupBranch: String,
+        @Query("fromDate") fromDate: String,   // yyyy-MM-dd
+        @Query("toDate") toDate: String,       // yyyy-MM-dd
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 10
+    ): Response<FindBoxResp>
 
 }
 

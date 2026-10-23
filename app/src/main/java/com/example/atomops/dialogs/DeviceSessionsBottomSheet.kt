@@ -1,15 +1,12 @@
 package com.example.atomops.dialogs
 
-import android.app.Dialog
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.FragmentManager
-import com.example.atomops.R
 import com.example.atomops.adapters.DeviceSessionAdapter
 import com.example.atomops.databinding.DialogDeviceSessionsBinding
 import com.example.atomops.models.DeviceSession
@@ -50,20 +47,17 @@ class DeviceSessionsBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
-        dialog.setOnShowListener {
-            val sheet = dialog.findViewById<FrameLayout>(
-                R.id.design_bottom_sheet
-            ) ?: return@setOnShowListener
-            // let our rounded drawable show instead of the default sheet background
-            sheet.setBackgroundColor(Color.TRANSPARENT)
-            BottomSheetBehavior.from(sheet).apply {
-                state = BottomSheetBehavior.STATE_EXPANDED
-                skipCollapsed = true
-            }
+    override fun onStart() {
+        super.onStart()
+
+        // The parent of our root view is the bottom sheet container.
+        // Make it transparent so our rounded background shows.
+        (requireView().parent as? View)?.setBackgroundColor(Color.TRANSPARENT)
+
+        (dialog as? BottomSheetDialog)?.behavior?.apply {
+            state = BottomSheetBehavior.STATE_EXPANDED
+            skipCollapsed = true
         }
-        return dialog
     }
 
     private fun confirmLogout(session: DeviceSession) {
@@ -107,16 +101,3 @@ class DeviceSessionsBottomSheet : BottomSheetDialogFragment() {
         fun show(fm: FragmentManager) = DeviceSessionsBottomSheet().show(fm, TAG)
     }
 }
-
-/*
- Usage (e.g. in ProfileFragment, on "Device Sessions" card click):
-
- binding.cardDeviceSessions.setOnClickListener {
-     DeviceSessionsBottomSheet.show(childFragmentManager)
- }
-
- build.gradle (app):
-   android { buildFeatures { viewBinding = true } }
-   implementation("com.google.android.material:material:1.12.0")
-   implementation("androidx.recyclerview:recyclerview:1.3.2")
-*/

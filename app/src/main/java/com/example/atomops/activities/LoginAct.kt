@@ -53,7 +53,8 @@ class LoginAct : AppCompatActivity() {
             lifecycleScope.launch {
                 val deviceinfo= DeviceInfo(Utils.getDeviceIMEI(this@LoginAct),"Scanner", Utils.getLocalIpAddress(),"Android")
              //   val mod= LoginMod(deviceinfo, password = "K8CSU646m42$",username = "ashis")
-                val mod= LoginMod(deviceinfo, password = "asdfghjkl",username = "vaibhav21")
+                //val mod= LoginMod(deviceinfo, password = "asdfghjkl",username = "vaibhav21")
+                val mod= LoginMod(deviceinfo, password = "asdfghjkl",username = "amit.shah")
                 //val mod= LoginMod(deviceinfo, password = "Chandan@1998",username = "mis.admin.400021")
              //   val mod= LoginMod(deviceinfo, password = binding.etPassword.text.toString(),username = binding.etUserId.text.toString())
                 try {

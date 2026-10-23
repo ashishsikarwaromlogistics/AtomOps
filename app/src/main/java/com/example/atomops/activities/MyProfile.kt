@@ -13,6 +13,7 @@ import com.example.atomops.AtomOpsApp
 import com.example.atomops.Constants
 import com.example.atomops.R
 import com.example.atomops.databinding.ActivityMyProfileBinding
+import com.example.atomops.dialogs.DeviceSessionsBottomSheet
 import com.example.atomops.models.password.ChangePassMod
 import com.example.atomops.networking.ApiClient
 import com.example.atomops.networking.ServiceInterface
@@ -60,7 +61,7 @@ lateinit var binding: ActivityMyProfileBinding
         //binding.tvName.setText(AtomOpsApp.getPreferences(Constants.EMPNAME,""))
 
         binding.cardDevice.setOnClickListener {
-
+            DeviceSessionsBottomSheet.show(supportFragmentManager)
         }
 
 

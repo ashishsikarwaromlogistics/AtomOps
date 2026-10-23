@@ -17,7 +17,7 @@ data class Item(
     val sourceBranch: String,
     val status: String,
     val statusChangedAt: String,
-    val totalWeightKg: Int,
+    val totalWeightKg: Double,
     val tripNo: String,
     val utilizationPercent: Double,
     val vehicleCapacityKg: Int,

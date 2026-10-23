@@ -96,10 +96,10 @@ class BoxIssueBottomSheet : BottomSheetDialogFragment() {
             return
         }
         val result = Bundle().apply {
-            putString(KEY_BOX_ID, boxId)
-            putString(KEY_TYPE, type)
-            putString(KEY_REASON, selected.text.toString())
-            putString(KEY_REMARK, binding.etRemark.text.toString().trim())
+            putString(KEY_BOX_ID, boxId)//this boxnum
+            putString(KEY_TYPE, type)//this is short or damage
+            putString(KEY_REASON, selected.text.toString())//this is reason
+            putString(KEY_REMARK, binding.etRemark.text.toString().trim())//this is remark
         }
         parentFragmentManager.setFragmentResult(REQUEST_KEY, result)
         dismiss()

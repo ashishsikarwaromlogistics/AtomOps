@@ -13,14 +13,20 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.widget.doAfterTextChanged
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
+import com.example.atomops.AtomOpsApp
+import com.example.atomops.Constants
 import com.example.atomops.R
 import com.example.atomops.adapters.PrqAdapter
 import com.example.atomops.models.DummyPrqData
 import com.example.atomops.models.PrqRequest
 import com.example.atomops.models.RequestStatus
 import com.example.atomops.models.RequestType
+import com.example.atomops.networking.ApiClient
+import com.example.atomops.networking.ServiceInterface
 import com.google.android.material.tabs.TabLayout
+import kotlinx.coroutines.launch
 
 class PrqAct : AppCompatActivity() {
 
@@ -59,6 +65,20 @@ class PrqAct : AppCompatActivity() {
         setupSearch()
 
         applyFilters()
+        getData()
+    }
+
+    private fun getData() {
+   lifecycleScope.launch {
+      val response= ApiClient.getRetrofitclient().create(ServiceInterface::class.java).getPrqs(
+           AtomOpsApp.getPreferences( Constants.JWTTOKEN,""),
+           "CREATED",
+           AtomOpsApp.getPreferences( Constants.BCODE,""),
+           "2026-10-01",
+           "2026-10-30",
+           0,10
+           )
+   }
     }
 
     private fun initViews() {

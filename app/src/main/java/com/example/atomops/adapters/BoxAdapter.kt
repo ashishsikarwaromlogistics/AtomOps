@@ -35,8 +35,8 @@ class BoxAdapter(
             }
 
             b.tvAction.text = when {
-                box.status == BoxStatus.SHORT.toString() -> "Undo Short"
-                box.status == BoxStatus.DAMAGE.toString() -> "Undo Damage"
+                box.damage == BoxStatus.DAMAGE -> "Undo Damage"
+                box.isshort == BoxStatus.SHORT -> "Undo Short"
                 box.isScan -> "Mark Damage"
                 else -> "Mark Short"
             }

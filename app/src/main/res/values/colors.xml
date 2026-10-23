@@ -7,6 +7,7 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="transparent">#00FFFFFF</color>
     <color name="offwhite">#DCDBDB</color>
 
     <color name="colorPrimary">#0C102A</color>
@@ -86,4 +87,47 @@
     <color name="scanned_green">#1E9E6A</color>
     <color name="chip_selected_bg">#E6F8F8</color>
     <color name="chip_unselected_stroke">#D5DAE1</color>
+
+
+    <color name="header_teal">#17687F</color>
+    <color name="icon_teal">#1AA38A</color>
+    <color name="created_bg">#E8ECFA</color>
+    <color name="created_text">#4A5BC4</color>
+    <color name="pickup_bg">#EFE6FB</color>
+    <color name="pickup_text">#8A4FD6</color>
+
+
+    <color name="dot_created">#4A5BC4</color>
+    <color name="dot_dispatch">#4FB3F0</color>
+    <color name="dot_gate_out">#9B6BE0</color>
+    <color name="dot_gate_in">#F5A623</color>
+    <color name="dot_completed">#1FA971</color>
+    <color name="dot_cancelled">#D9534F</color>
+
+    <color name="dispatch_bg">#E3F3FD</color>
+    <color name="dispatch_text">#2D8FD0</color>
+    <color name="gate_in_bg">#FDF1DC</color>
+    <color name="gate_in_text">#C98310</color>
+    <color name="completed_bg">#E1F6EC</color>
+    <color name="completed_text">#17895A</color>
+    <color name="cancelled_bg">#FBE5E4</color>
+    <color name="cancelled_text">#C2403B</color>
+
+    <color name="util_orange">#F57C00</color>
+    <color name="gradient_start">#0B4A7F</color>
+    <color name="gradient_end">#1A7F95</color>
+
+
+    <color name="teal_selected_stroke">#2BB3A8</color>
+    <color name="teal_selected_bg">#EBFEFE</color>
+    <color name="card_unselected_stroke">#E6E9EE</color>
+    <color name="navy_button">#0A3570</color>
+    <color name="handle_grey">#D0D5DD</color>
+
+    <color name="dot_idle">#C4C4C4</color>
+    <color name="dock_card_bg">#FAFAFA</color>
+    <color name="banner_bg">#EEFBF8</color>
+    <color name="orange_soft">#FCE5D3</color>
+    <color name="chip_checked_bg">#E6F7F4</color>
+    <color name="stroke_gray">#D0D0D0</color>
 </resources>

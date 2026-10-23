@@ -8,11 +8,11 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:background="@drawable/curved_rect"
+        android:layout_margin="@dimen/_5sdp"
+        android:background="@drawable/rect"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="16dp">
+        android:padding="@dimen/_5sdp">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -27,13 +27,13 @@
                 android:layout_height="wrap_content"
                 android:text="Chrome on Windows (v124.0.0.0)"
                 android:textColor="@color/colorPrimary"
-                android:textSize="15sp"
+                android:textSize="@dimen/_11ssp"
                 android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="@dimen/_5sdp"
                 android:orientation="horizontal">
 
                 <TextView
@@ -42,7 +42,7 @@
                     android:layout_height="wrap_content"
                     android:text="Bangalore, India"
                     android:textColor="@color/black"
-                    android:textSize="14sp" />
+                    android:textSize="@dimen/_9ssp" />
 
                 <!-- Set text to "● Active Now" (ds_success) or "● Last Active 2 days ago" (ds_text_secondary) -->
                 <TextView
@@ -52,7 +52,7 @@
                     android:layout_marginStart="8dp"
                     android:text="● Active Now"
                     android:textColor="@color/dot_green"
-                    android:textSize="14sp"
+                    android:textSize="@dimen/_9ssp"
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
@@ -60,15 +60,15 @@
         <TextView
             android:id="@+id/btnLogout"
             android:layout_width="wrap_content"
-            android:layout_height="44dp"
-            android:layout_marginStart="12dp"
+            android:layout_height="@dimen/_30sdp"
+            android:layout_marginStart="@dimen/_5sdp"
             android:background="@drawable/rect"
             android:gravity="center"
-            android:paddingStart="14dp"
+            android:paddingStart="@dimen/_5sdp"
             android:paddingEnd="14dp"
             android:text="Logout"
             android:textColor="@color/dot_red"
-            android:textSize="14sp"
+            android:textSize="@dimen/_9ssp"
             android:textStyle="bold" />
     </LinearLayout>
 </layout>

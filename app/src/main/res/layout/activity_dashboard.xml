@@ -66,6 +66,7 @@
               app:layout_constraintTop_toTopOf="@id/ivGreeting">
 
             <TextView
+                android:id="@+id/tvname"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Hi, Rajveer Sharma!"
@@ -74,6 +75,7 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/tvbranch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
@@ -333,6 +335,7 @@
             android:orientation="horizontal">
 
           <androidx.cardview.widget.CardView
+              android:id="@+id/crdrequest"
               android:layout_width="0dp"
               android:layout_height="@dimen/_80sdp"
               android:layout_marginEnd="6dp"
@@ -371,6 +374,7 @@
           </androidx.cardview.widget.CardView>
 
           <androidx.cardview.widget.CardView
+              android:id="@+id/crdyrdmgmt"
               android:layout_width="0dp"
               android:layout_height="@dimen/_80sdp"
               android:layout_marginStart="6dp"
@@ -491,6 +495,7 @@
             android:orientation="horizontal">
 
           <androidx.cardview.widget.CardView
+              android:id="@+id/crdlocal"
               android:layout_width="0dp"
               android:layout_height="@dimen/_80sdp"
               android:layout_marginEnd="6dp"
@@ -525,6 +530,7 @@
           </androidx.cardview.widget.CardView>
 
           <androidx.cardview.widget.CardView
+              android:id="@+id/crdmidmile"
               android:layout_width="0dp"
               android:layout_height="@dimen/_80sdp"
               android:layout_marginStart="6dp"

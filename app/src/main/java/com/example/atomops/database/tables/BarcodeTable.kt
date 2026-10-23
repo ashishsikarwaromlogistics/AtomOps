@@ -24,6 +24,8 @@ data class BarcodeTable(
     @ColumnInfo(name = "trip_id")
     val tripId: String,
 
-    var isScan: Boolean = false
+    var isScan: Boolean = false,
+    val eventid: String,
+    val clientRef: String
 )
 

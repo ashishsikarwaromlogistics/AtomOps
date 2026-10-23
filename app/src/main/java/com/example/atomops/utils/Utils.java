@@ -21,6 +21,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Locale;
+import java.util.UUID;
 import java.util.concurrent.CancellationException;
 
 import javax.net.ssl.SSLException;
@@ -223,4 +224,10 @@ public class Utils {
         String serial= Settings.Secure.getString(context.getContentResolver(),Settings.Secure.ANDROID_ID);
         return serial;
     }
+
+    public static String GenrateUUID(){
+        return  UUID.randomUUID().toString();
+    }
+
+
 }

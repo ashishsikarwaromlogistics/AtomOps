@@ -30,7 +30,7 @@
                 android:layout_width="32dp"
                 android:layout_height="32dp"
                 android:padding="4dp"
-                android:src="@drawable/baseline_arrow_back_ios_24"
+                android:src="@drawable/ic_back"
                 app:tint="@android:color/white" />
 
             <TextView
@@ -89,7 +89,7 @@
                     android:hint="Search By 'Trip ID'"
                     android:imeOptions="actionSearch"
                     android:inputType="text"
-                    android:text="TRIP-1001-26001925"
+                    android:text="TRIP-1002-26000012"
                     android:maxLines="1"
                     android:textColor="#101828"
                     android:textColorHint="#98A2B3"

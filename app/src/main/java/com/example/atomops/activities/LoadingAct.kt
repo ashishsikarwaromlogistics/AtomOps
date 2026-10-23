@@ -30,12 +30,15 @@ import com.example.atomops.databinding.ActivityLoadingBinding
 import com.example.atomops.models.bulkids.BulkIdGenMod
 import com.example.atomops.models.bulkids.Item
 import com.example.atomops.models.findbox.FIndBoxMod
+import com.example.atomops.models.loadtrip.LoadTripMod
+import com.example.atomops.models.loadtrip.ShortBoxe
 import com.example.atomops.models.savedata.SaveDataMod
 import com.example.atomops.networking.ApiClient
 import com.example.atomops.networking.ServiceInterface
 import com.example.atomops.utils.Utils
 import kotlinx.coroutines.launch
 import java.util.Locale
+import kotlin.Any
 import kotlin.String
 
 class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
@@ -136,31 +139,45 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                             Item(
                                 boxCode = i.box,
                                 branchCode = AtomOpsApp.getPreferences(Constants.BCODE, ""),
-                                clientRef = serial + Utils.getCurrentTimestampunique() + (index + 1),
+                                clientRef = i.clientRef,// serial + Utils.getCurrentTimestampunique() + (index + 1),
                                 companyCode = AtomOpsApp.getPreferences(Constants.COMP_CODE, ""),
                                 deviceId = serial,
                                 eventType = "OUT_SCAN",
-                                expectedDocketNo = i.box,
+                                expectedDocketNo = i.docketno,
                                 locationCode = "",
                                 scanStage = "LOAD",
-                                scannedAt = Utils.getCurrentTimestamp(),
-                                scannedBy = AtomOpsApp.getPreferences(Constants.EMP_ID, "")
+                                scannedAt ="2026-10-22T10:32:00+05:30" ,//Utils.getCurrentTimestamp(),
+                                scannedBy = AtomOpsApp.getPreferences(Constants.EMP_ID, ""),
+
                             )
                         )
                     }
 
 
                 val mod= BulkIdGenMod(companyCode = AtomOpsApp.getPreferences(Constants.COMP_CODE,"").toInt(),items=items)
+                 try {
+                     val resp=  ApiClient.getRetrofitclient().create(ServiceInterface::class.java).bulkScan("Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),mod)
+                     if(resp.code()==200){
+                         if(resp.body()!!.status.equals("SUCCESS")){
+                           //601769  //  Utils.showDialog(this@LoadingAct,"success",resp.body().message.toString(),R.drawable.ic_baseline_check_circle_24)
+                            for(i in resp.body()!!.data.results){
+                             if(i.outcome.equals("APPLIED")||i.outcome.equals("APPLIED_IDEMPOTENT")){
+                                 barcodedao.updateeventid(i.boxCode,i.publicEventId.toString())
+                             }else{
 
+                             }
+                            }
+                             saveData()
+                         }
+                     }
+                     else {
+                         Utils.showDialog(this@LoadingAct,"error"+resp.code(), Utils.getHttpErrorMessage(resp.code(),resp.errorBody().toString()),R.drawable.ic_baseline_error_24)
 
-                  val resp=  ApiClient.getRetrofitclient().create(ServiceInterface::class.java).bulkScan("Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),mod)
-                 if(resp.code()==200){
-
+                     }
+                 }catch (e: Exception) {
+                     Utils.gettrycatcherror(this@LoadingAct,e)
                  }
-                    else {
-                   Utils.showDialog(this@LoadingAct,"error"+resp.code(), Utils.getHttpErrorMessage(resp.code(),resp.errorBody().toString()),R.drawable.ic_baseline_error_24)
 
-                    }
                 }
 
             }
@@ -275,13 +292,7 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
-    private fun SubmitData(){
 
-        val mod=SaveDataMod(actor= AtomOpsApp.getPreferences(Constants.EMP_ID,""), branch = AtomOpsApp.getPreferences(Constants.BCODE,""),
-            companyCode = AtomOpsApp.getPreferences(Constants.COMP_CODE,"").toInt(), items = mutableListOf(), shortBoxes = mutableListOf())
-
-
-    }
 
     private fun speak(text: String) {
         try {
@@ -385,6 +396,8 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                     if(response.body()?.status=="SUCCESS"){
                      if(response.body()?.data!=null) {
                       if( response.body()!!.data.dockets.size>0){
+                          binding.tvDocketCount.setText( response.body()!!.data.dockets.size.toString())
+                          binding.tvDocketsCount.setText( response.body()!!.data.dockets.size.toString())
                           for(i in response.body()!!.data.dockets){
                           for(j in i.boxes){
                               if(barcodedao.checkexist(j.boxCode)>0){
@@ -404,7 +417,9 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                                       isshort = "",
                                       damageurl = "",
                                       tripId = tripId,
-                                      isScan = false
+                                      isScan = false,
+                                      eventid = "",
+                                      clientRef = Utils.GenrateUUID()
                                   )
                                   barcodedao.insert(barcodedata)
                               }
@@ -412,6 +427,11 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                           }
 
                           }
+
+
+                          val totalbarcode=barcodedao.getByManifest(manifest).size.toString()
+                          binding.tvBoxesCount.setText(totalbarcode)
+                          binding.tvManifestProgress.setText(boxes.size.toString()+"/"+totalbarcode)
 
 
                       }
@@ -437,4 +457,35 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
           }
        }
     }
+
+    private fun saveData(){
+        lifecycleScope.launch {
+            val shortbox=mutableListOf<ShortBoxe>()// MutableList<ShortBoxe>()
+        val myshorbox=barcodedao.getByManifestshort(manifest = currentManifest)
+            for(i in myshorbox){
+                shortbox.add(ShortBoxe(  boxCode=i.box,
+                      docketNo= i.docketno,
+                  remarks= i.isshort))
+            }
+        val item=mutableListOf<com.example.atomops.models.loadtrip.Item>()
+          val myitem=  barcodedao.getByManifestwithoutshort(currentManifest)
+            for(i in myitem){
+                item.add(com.example.atomops.models.loadtrip.Item(
+                     boxCode=i.box,
+                     damagePhotoUrl=i.damageurl,
+                 damageRemarks= i.damage,
+                 docketNo=i.docketno,
+                 scanEventId=i.eventid
+
+                ))
+            }
+        val mod= LoadTripMod(actor = AtomOpsApp.getPreferences(Constants.EMP_ID,""), branch = AtomOpsApp.getPreferences(Constants.BCODE,""),companyCode= AtomOpsApp.getPreferences(Constants.COMP_CODE,"").toInt(), items =item, shortBoxes = shortbox)
+         try {
+             val resp=ApiClient.getRetrofitclient().create(ServiceInterface::class.java).bulkLoadBoxes("Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),tripId,mod)
+             if(resp.code()==200){}
+         }catch (e: Exception){}
+
+       }
+        }
+
 }

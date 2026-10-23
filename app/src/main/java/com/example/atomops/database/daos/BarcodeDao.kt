@@ -50,6 +50,12 @@ interface BarcodeDao {
     @Query("SELECT * FROM BarcodeTable WHERE manifest = :manifest")
     suspend fun getByManifest(manifest: String): List<BarcodeTable>
 
+    @Query("SELECT * FROM BarcodeTable WHERE manifest = :manifest and isScan=0 and isshort!='' ")
+    suspend fun getByManifestshort(manifest: String): List<BarcodeTable>
+
+    @Query("SELECT * FROM BarcodeTable WHERE manifest = :manifest and isScan=1 and isshort='' ")
+    suspend fun getByManifestwithoutshort(manifest: String): List<BarcodeTable>
+
     @Query("SELECT * FROM BarcodeTable WHERE manifest = :manifest")
     fun observeByManifest(manifest: String): Flow<List<BarcodeTable>>
 
@@ -88,8 +94,14 @@ interface BarcodeDao {
     @Query("UPDATE BarcodeTable SET isScan = :isScan WHERE box = :box AND manifest = :manfiest")
     suspend fun updateStatus(box: String, manfiest: String, isScan: Boolean): Int
 
+    @Query("UPDATE BarcodeTable SET eventid = :eventid WHERE box = :box")
+    suspend fun updateeventid(box: String, eventid: String): Int
+
     @Query("UPDATE BarcodeTable SET isshort = :isshort WHERE box = :box ")
     suspend fun updateShortStatus(box: String, isshort: String): Int
+
+    @Query("UPDATE BarcodeTable SET damage = :damage WHERE box = :box ")
+    suspend fun updateDamageStatus(box: String, damage: String): Int
 
     @Query("UPDATE BarcodeTable SET isshort = '' WHERE box = :box ")
     suspend fun removeshortShortStatus(box: String): Int

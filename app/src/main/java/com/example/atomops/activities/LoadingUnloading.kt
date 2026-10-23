@@ -2,14 +2,13 @@ package com.example.atomops.activities
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.inputmethod.EditorInfo
+import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.widget.doAfterTextChanged
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -18,8 +17,6 @@ import com.example.atomops.Constants
 import com.example.atomops.CustomProgress2
 import com.example.atomops.R
 import com.example.atomops.adapters.TripAdapter
-import com.example.atomops.database.tables.BarcodeTable
-import com.example.atomops.database.tables.TripDetailsTable
 import com.example.atomops.databinding.ActivityLoadingUnloadingBinding
 import com.example.atomops.models.trips.Item
 import com.example.atomops.networking.ApiClient
@@ -35,16 +32,26 @@ class LoadingUnloading : AppCompatActivity() {
 
     private val allTrips = mutableListOf<Item>()
     private var selectedTab = "All Trips"
+    private var selectedStatus = "CREATED"
     private var query = ""
+
+    // Tab title -> status value sent to the API (adjust to what your backend expects)
+    private val tabStatusMap = linkedMapOf(
+        "All Trips" to "CREATED",
+        "Loading" to "CREATED",
+        "Unloading" to "GATE_IN",
+        "Completed" to "COMPLETED"
+    )
 
     // Created once, reused everywhere
     private val api: ServiceInterface by lazy {
         ApiClient.getRetrofitclient().create(ServiceInterface::class.java)
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        binding= DataBindingUtil. setContentView(this,R.layout.activity_loading_unloading)
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_loading_unloading)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
@@ -53,24 +60,30 @@ class LoadingUnloading : AppCompatActivity() {
         setupToolbar()
         setupTabs()
         setupList()
-        setupSearch()
-        loadDummyData()   // replace with your API call
-        if(Utils.haveInternet(this))
-        LoadData() else Utils.showDialog(
-            this,
-            "error",
-            "NO Intenet Connection",R.drawable.ic_baseline_error_24
-        )
+
+        // Initial load (first tab). The tab listener is added after the first tab
+        // is selected, so it does not fire a duplicate call.
+        loadIfOnline(selectedStatus)
+
         binding.ivSearch.setOnClickListener {
-            if(binding.etSearch.text.toString().length>10)
-            fliterdata(binding.etSearch.text.toString())
-            else{
-                Utils.showDialog(this,"error","please enter valid trip id",R.drawable.ic_baseline_error_24)
+            val text = binding.etSearch.text.toString()
+            if (text.length > 10) {
+                if (Utils.haveInternet(this)) {
+                    fliterdata(text)
+                } else {
+                    showNoInternet()
+                }
+            } else {
+                Utils.showDialog(
+                    this, "error", "please enter valid trip id",
+                    R.drawable.ic_baseline_error_24
+                )
             }
         }
     }
+
     private fun setupToolbar() {
-        cp= CustomProgress2(this)
+        cp = CustomProgress2(this)
         binding.ivBack.setOnClickListener { finish() }
         binding.ivSearchTop.setOnClickListener {
             binding.etSearch.requestFocus()
@@ -81,23 +94,37 @@ class LoadingUnloading : AppCompatActivity() {
     }
 
     private fun setupTabs() {
-        listOf("All Trips", "Loading", "Unloading", "Completed").forEach {
+        tabStatusMap.keys.forEach {
             binding.tabLayout.addTab(binding.tabLayout.newTab().setText(it))
         }
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 selectedTab = tab.text.toString()
-                applyFilters()
+                selectedStatus = tabStatusMap[selectedTab] ?: "CREATED"
+
+                // reset search when switching tabs
+                binding.etSearch.text?.clear()
+                query = ""
+
+                // API hit on tab select
+                loadIfOnline(selectedStatus)
             }
+
             override fun onTabUnselected(tab: TabLayout.Tab) {}
-            override fun onTabReselected(tab: TabLayout.Tab) {}
+
+            override fun onTabReselected(tab: TabLayout.Tab) {
+                // tap the same tab again to refresh
+                onTabSelected(tab)
+            }
         })
     }
 
     private fun setupList() {
         adapter = TripAdapter(
             onItemClick = { trip ->
-                 startActivity(Intent(this, TripsDetails::class.java).putExtra("tripid",trip.tripNo))
+                startActivity(
+                    Intent(this, TripsDetails::class.java).putExtra("tripid", trip.tripNo)
+                )
                 Toast.makeText(this, trip.tripNo, Toast.LENGTH_SHORT).show()
             },
             onMoreClick = { trip, anchor ->
@@ -120,108 +147,115 @@ class LoadingUnloading : AppCompatActivity() {
         binding.rvTrips.adapter = adapter
     }
 
-    private fun setupSearch() {
-       /* binding.etSearch.doAfterTextChanged {
-            query = it?.toString()?.trim().orEmpty()
-            applyFilters()
-        }
-        binding.etSearch.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                applyFilters(); true
-            } else false
-        }*/
-    }
-
+    // Server already returns trips for the selected status,
+    // so only the local search text is applied here.
     private fun applyFilters() {
         val filtered = allTrips.filter { trip ->
-            val tabOk = selectedTab == "All Trips" || trip.status.equals(selectedTab, true)
-            val searchOk = query.isEmpty() || trip.tripNo.contains(query, true)
-            tabOk && searchOk
+            query.isEmpty() || trip.tripNo.contains(query, true)
         }
         adapter.submitList(filtered)
         binding.tvEmpty.visibility =
-            if (filtered.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+            if (filtered.isEmpty()) View.VISIBLE else View.GONE
     }
 
-
-    private fun LoadData(){
-        cp.show()
-
-        lifecycleScope.launch {
-            try{
-               val resp= api.getTrips(
-                   "Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),400021,"CREATED",1001,1,20)
-               if (resp.isSuccessful == true && resp.body()?.status == "SUCCESS") {
-                   cp.dismiss()
-                   val data = resp.body()?.data
-                   if (data != null) {
-                       // Save tokens securely, then navigate
-                       for(i in data.items)
-                           allTrips.add(i)
-                       applyFilters()
-                   } else {
-                       showError("Login failed")
-                   }
-               } else {
-                   cp.dismiss()
-                   when (resp.code()) {
-                       401 -> showError("Invalid user ID or password")
-                       403 -> showError("Access denied")
-                       in 500..599 -> showError("Server error, try again later")
-                       else -> showError("Login failed")
-                   }
-               }
-
-           }catch (e: Exception){
-               cp.dismiss()
-               Utils.gettrycatcherror(this@LoadingUnloading,e)
-           }
+    private fun loadIfOnline(status: String) {
+        if (Utils.haveInternet(this)) {
+            LoadData(status)
+        } else {
+            showNoInternet()
         }
+    }
 
-      }
-    private fun fliterdata(q :String){
+    private fun showNoInternet() {
+        Utils.showDialog(
+            this, "error", "NO Internet Connection",
+            R.drawable.ic_baseline_error_24
+        )
+    }
+
+    private fun LoadData(status: String) {
         cp.show()
+
         lifecycleScope.launch {
-          try{ val resp= api.filtertrips(
-              "Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),400021,"PLANNED",1001,1,20,q)
-              if (resp?.isSuccessful == true && resp.body()?.status == "SUCCESS") {
-                  cp.dismiss()
-                  allTrips.clear()
-                  val data = resp.body()?.data
-                  if (data != null) {
-                      // Save tokens securely, then navigate
-                      if(data.items.size==0){
-                          Utils.showDialog(this@LoadingUnloading,"error",resp.body()?.message?:"No data found",R.drawable.ic_baseline_error_24)
-                      }
-                      for(i in data.items)
-                          allTrips.add(i)
+            try {
+                val resp = api.getTrips(
+                    "Bearer " + AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""),
+                    400021,
+                    status,
+                    AtomOpsApp.getPreferences(Constants.BCODE, "").toInt(),
+                    1,
+                    20
+                )
+                cp.dismiss()
+                if (resp.isSuccessful && resp.body()?.status == "SUCCESS") {
+                    allTrips.clear()
+                    val data = resp.body()?.data
+                    if (data != null) {
+                        allTrips.addAll(data.items)
                         applyFilters()
-                  } else {
-                      showError("Login failed")
-                  }
-              }
-              else {
-                  cp.dismiss()
-                  when (resp?.code()) {
-                      401 -> showError("Invalid user ID or password")
-                      403 -> showError("Access denied")
-                      in 500..599 -> showError("Server error, try again later")
-                      else -> showError("Login failed")
-                  }
-              }}
-          catch (e:Exception){
-              Utils.gettrycatcherror(this@LoadingUnloading,e)
-          }
-
+                    } else {
+                        showError("No data received")
+                    }
+                } else {
+                    handleError(resp.code())
+                }
+            } catch (e: Exception) {
+                cp.dismiss()
+                Utils.gettrycatcherror(this@LoadingUnloading, e)
+            }
         }
     }
-    private fun loadDummyData() {
 
-        repeat(3) {
-
+    private fun fliterdata(q: String) {
+        cp.show()
+        lifecycleScope.launch {
+            try {
+                val resp = api.filtertrips(
+                    "Bearer " + AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""),
+                    400021,
+                    selectedStatus,
+                    AtomOpsApp.getPreferences(Constants.BCODE, "").toInt(),
+                    1,
+                    20,
+                    q
+                )
+                cp.dismiss()
+                if (resp.isSuccessful && resp.body()?.status == "SUCCESS") {
+                    allTrips.clear()
+                    val data = resp.body()?.data
+                    if (data != null) {
+                        if (data.items.isEmpty()) {
+                            Utils.showDialog(
+                                this@LoadingUnloading,
+                                "error",
+                                resp.body()?.message ?: "No data found",
+                                R.drawable.ic_baseline_error_24
+                            )
+                        }
+                        allTrips.addAll(data.items)
+                        applyFilters()
+                    } else {
+                        showError("No data received")
+                    }
+                } else {
+                    handleError(resp.code())
+                }
+            } catch (e: Exception) {
+                cp.dismiss()
+                Utils.gettrycatcherror(this@LoadingUnloading, e)
+            }
         }
-        applyFilters()
     }
+
+    private fun handleError(code: Int) {
+        when (code) {
+            401 -> showError("Session expired, please login again")
+            403 -> showError("Access denied")
+            in 500..599 -> showError("Server error, try again later")
+            else -> showError("Something went wrong")
+        }
+    }
+
     private fun showError(msg: String) {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }

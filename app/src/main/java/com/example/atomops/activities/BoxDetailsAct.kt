@@ -100,13 +100,28 @@ class BoxDetailsAct : AppCompatActivity() {
 
     /** Scanned box -> Damage sheet, unscanned box -> Short sheet, already marked -> undo. */
     private fun onActionClick(box: BoxItem) {
-        if (box.status != BoxStatus.NONE) {
-            updateStatus(box.box, BoxStatus.NONE)   // undo
+        if (box.isScan) {
+           if(box.damage.equals("DAMAGE")){
+               updateStatus(box.box, BoxStatus.NONE,"DAMAGE")   // undo
+
+           }
+            else{
+               val type = BoxStatus.DAMAGE
+               BoxIssueBottomSheet.newInstance(box.box, type)
+                   .show(supportFragmentManager, BoxIssueBottomSheet.TAG)
+            }
+
             return
         }
-        val type = if (box.isScan) BoxStatus.DAMAGE else BoxStatus.SHORT
-        BoxIssueBottomSheet.newInstance(box.box, type)
-            .show(supportFragmentManager, BoxIssueBottomSheet.TAG)
+
+        else if (box.isshort.equals("SHORT")) {
+            updateStatus(box.box, BoxStatus.NONE,"SHORT")   // undo
+            return
+        }
+        else{
+            updateStatus(box.box, BoxStatus.SHORT,"")
+        }
+
 
     }
 
@@ -120,18 +135,39 @@ class BoxDetailsAct : AppCompatActivity() {
             val reason = bundle.getString(BoxIssueBottomSheet.KEY_REASON).orEmpty()
             val remark = bundle.getString(BoxIssueBottomSheet.KEY_REMARK).orEmpty()
 
-            updateStatus(boxId, type)
+            updateStatus(boxId, type,remark,reason)
 
             // TODO: save reason + remark (and damage photo url) to your database, e.g.
             // lifecycleScope.launch { barcodedao.updateStatus(docketno, boxId, type) }
         }
     }
 
-    private fun updateStatus(boxId: String, newStatus: String) {
+    private fun updateStatus(boxId: String, newStatus: String,tagname:String) {
         val index = allBoxes.indexOfFirst { it.box == boxId }
         if (index != -1) {
             lifecycleScope.launch {
+
+                if(tagname.equals("")||tagname.equals("SHORT")){
                 barcodedao.updateShortStatus(boxId,newStatus)
+                    allBoxes[index] = allBoxes[index].copy(isshort = newStatus)}
+                else{
+                barcodedao.updateDamageStatus(boxId,newStatus)
+                    allBoxes[index] = allBoxes[index].copy(damage = newStatus)
+                }
+                refresh()
+            }
+
+
+
+
+        }
+    }
+
+    private fun updateStatus(boxId: String, newStatus: String, remark: String,reason:String) {
+        val index = allBoxes.indexOfFirst { it.box == boxId }
+        if (index != -1) {
+            lifecycleScope.launch {
+                barcodedao.updateDamageStatus(boxId,newStatus)
             }
 
             allBoxes[index] = allBoxes[index].copy(status = newStatus)
@@ -164,8 +200,8 @@ class BoxDetailsAct : AppCompatActivity() {
         binding.progressLoading.max = total
         binding.progressLoading.progress = scanned
 
-        binding.tvShortCount.text = allBoxes.count { it.status == BoxStatus.SHORT }.toString()
+        binding.tvShortCount.text = allBoxes.count { it.isshort == BoxStatus.SHORT }.toString()
         binding.tvExcessCount.text = allBoxes.count { it.status == BoxStatus.EXCESS }.toString()
-        binding.tvDamageCount.text = allBoxes.count { it.status == BoxStatus.DAMAGE }.toString()
+        binding.tvDamageCount.text = allBoxes.count { it.damage == BoxStatus.DAMAGE }.toString()
     }
 }
