@@ -26,6 +26,7 @@ data class BarcodeTable(
 
     var isScan: Boolean = false,
     val eventid: String,
-    val clientRef: String
+    val clientRef: String,
+    val boxloaded: Boolean,
 )
 

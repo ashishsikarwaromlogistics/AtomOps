@@ -30,6 +30,7 @@ class TripsDetails : AppCompatActivity() {
     lateinit var tripDetailsDao: TripDetailsDao //db.userDao()
     lateinit var getbarcodedao: BarcodeDao //db.userDao()
     var tripId=""
+    var currentstatus=""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -39,6 +40,7 @@ class TripsDetails : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+        currentstatus=intent.getStringExtra("currentstatus").toString()
         userDao = (application as AtomOpsApp).database.userDao()
         getbarcodedao = (application as AtomOpsApp).database.getBarcodeDao()
         tripDetailsDao = (application as AtomOpsApp).database.tripDetailDao()
@@ -53,6 +55,11 @@ class TripsDetails : AppCompatActivity() {
 
         getTripDetails(tripId)
         binding.btnStartLoading.setOnClickListener {
+            if(currentstatus.equals("UNLOADING")){
+                startActivity(Intent(this, UnloadingAct::class.java).putExtra("tripid",intent.getStringExtra("tripid")))
+
+            }
+            else
             startActivity(Intent(this,LoadingAct::class.java).putExtra("tripid",intent.getStringExtra("tripid")))
         }
     }

@@ -1,13 +1,18 @@
 package com.example.atomops.networking
 import com.example.atomops.models.TokenMod
 import com.example.atomops.models.bulkids.BulkResp
+import com.example.atomops.models.closem.CloseMod
 import com.example.atomops.models.findbox.FindBoxResp
+import com.example.atomops.models.loadphoto.LoadImageMod
 import com.example.atomops.models.loadtrip.LoadTripMod
 import com.example.atomops.models.login.LoginMod
 import com.example.atomops.models.login.LoginResp
 import com.example.atomops.models.password.ChangePassMod
+import com.example.atomops.models.seal.SealMod
 import com.example.atomops.models.tripdetails.TripDetailsResp
 import com.example.atomops.models.trips.TripResponse
+import com.example.atomops.models.uploadimage.UploadImageResp
+import okhttp3.MultipartBody
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Response
@@ -16,8 +21,10 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.HeaderMap
 import retrofit2.http.Headers
+import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.http.Url
@@ -132,6 +139,30 @@ interface ServiceInterface   {
         @Path("manifestId") manifestId: String,
         @Body mod: LoadTripMod
     ): Response<FindBoxResp>
+    //anifests//loading/close
+
+    @POST("atom-movement/api/v1/mm/manifests/{manifestId}/loading-photo")
+    suspend fun loadingPhoto(
+        @Header("Authorization") auth: String,
+        @Path("manifestId") manifestId: String,
+        @Query("companyCode") companyCode: String,
+        @Body body: LoadImageMod
+    ): Response<FindBoxResp>
+
+
+    @POST("atom-movement/api/v1/manifests/{manifestId}/loading/close")
+    suspend fun LoadingClose(
+        @Header("Authorization") auth: String,
+        @Path("manifestId") manifestId: String,
+        @Body mod: CloseMod
+    ): Response<FindBoxResp>
+
+    @POST("atom-movement/api/v1/trips/{trip}/seal")
+    suspend fun loadingseal(
+        @Header("Authorization") auth: String,
+        @Path("trip") trip: String,
+        @Body mod: SealMod
+    ): Response<FindBoxResp>
 
 
     @GET("atom-commercial/api/v1/prqs")
@@ -144,6 +175,16 @@ interface ServiceInterface   {
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 10
     ): Response<FindBoxResp>
+
+    @Multipart
+    @POST("document/documentUploadWithTemplateCode")
+    suspend fun uploadDocument(
+        @Header("Authorization") auth: String,
+        @Query("templateCode") templateCode: String,      // e.g. "PHOTOGRAPH"
+        @Query("isLinked") isLinked: Boolean = true,
+        @Query("documentName") documentName: String,      // e.g. "MyDoc"
+        @Part file: MultipartBody.Part                    // form field name: "file"
+    ): Response<UploadImageResp>
 
 }
 

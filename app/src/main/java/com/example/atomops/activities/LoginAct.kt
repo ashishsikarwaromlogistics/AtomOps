@@ -107,7 +107,9 @@ class LoginAct : AppCompatActivity() {
                             AtomOpsApp.savePreferences(Constants.JWTTOKEN,data.accessToken)
                             AtomOpsApp.savePreferences(Constants.REFRESH,data.refreshToken)
                             AtomOpsApp.savePreferences(Constants.ISLOGIN,"true")
+
                             startActivity(Intent(this@LoginAct, Dashboard::class.java))
+                        //    startActivity(Intent(this@LoginAct, BoxDetailsAct::class.java))
                         } else {
                             showError("Login failed")
                         }

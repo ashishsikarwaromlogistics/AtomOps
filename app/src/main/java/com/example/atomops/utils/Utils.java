@@ -139,7 +139,8 @@ public class Utils {
 
 
     public static String getCurrentTimestamp()  {
-        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
+      //  2026-10-22T10:32:00+05:30
+        return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.getDefault()).format(new Date());
     }
 
     public static String getCurrentTimestampunique() {

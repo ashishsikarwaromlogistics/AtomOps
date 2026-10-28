@@ -34,6 +34,7 @@ class LoadingUnloading : AppCompatActivity() {
     private var selectedTab = "All Trips"
     private var selectedStatus = "CREATED"
     private var query = ""
+    private var currentstatus="ALL"
 
     // Tab title -> status value sent to the API (adjust to what your backend expects)
     private val tabStatusMap = linkedMapOf(
@@ -123,7 +124,7 @@ class LoadingUnloading : AppCompatActivity() {
         adapter = TripAdapter(
             onItemClick = { trip ->
                 startActivity(
-                    Intent(this, TripsDetails::class.java).putExtra("tripid", trip.tripNo)
+                    Intent(this, TripsDetails::class.java).putExtra("currentstatus",currentstatus).putExtra("tripid", trip.tripNo)
                 )
                 Toast.makeText(this, trip.tripNo, Toast.LENGTH_SHORT).show()
             },
@@ -160,6 +161,7 @@ class LoadingUnloading : AppCompatActivity() {
 
     private fun loadIfOnline(status: String) {
         if (Utils.haveInternet(this)) {
+            currentstatus=status
             LoadData(status)
         } else {
             showNoInternet()

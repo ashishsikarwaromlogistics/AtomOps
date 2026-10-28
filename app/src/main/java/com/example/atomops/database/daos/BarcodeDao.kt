@@ -94,6 +94,26 @@ interface BarcodeDao {
     @Query("UPDATE BarcodeTable SET isScan = :isScan WHERE box = :box AND manifest = :manfiest")
     suspend fun updateStatus(box: String, manfiest: String, isScan: Boolean): Int
 
+
+    @Query("UPDATE BarcodeTable SET boxloaded = 1 WHERE  manifest = :manfiest")
+    suspend fun updateLoadstatus(manfiest: String): Int
+
+    @Query("""
+        SELECT NOT EXISTS (
+            SELECT 1 FROM BarcodeTable
+            WHERE trip_id = :tripId AND boxloaded = 0
+        )
+    """)
+    suspend fun areAllBoxesLoaded(tripId: String): Boolean
+
+    @Query("""
+    SELECT box FROM BarcodeTable 
+    WHERE manifest = :manifestNo 
+    AND isScan = 0 
+    AND isshort = ''
+""")
+    suspend fun getPendingBoxes(manifestNo: String): List<String>
+
     @Query("UPDATE BarcodeTable SET eventid = :eventid WHERE box = :box")
     suspend fun updateeventid(box: String, eventid: String): Int
 

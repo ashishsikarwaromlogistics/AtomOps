@@ -130,4 +130,9 @@
     <color name="orange_soft">#FCE5D3</color>
     <color name="chip_checked_bg">#E6F7F4</color>
     <color name="stroke_gray">#D0D0D0</color>
+
+    <color name="input_stroke">#E4E7EC</color>
+    <color name="hint_grey">#667085</color>
+    <color name="upload_bg">#EBFEFE</color>
+    <color name="upload_icon_tint">#0A3570</color>
 </resources>

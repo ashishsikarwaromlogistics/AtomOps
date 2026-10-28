@@ -11,6 +11,7 @@ import com.example.atomops.R
 import com.example.atomops.activities.BoxDetailsAct
 import com.example.atomops.database.tables.TripDetailsTable
 import com.example.atomops.databinding.CustomScanBinding
+import com.example.atomops.models.DocketBox
 
 data class ScanItem(
     val docketNo: String,
@@ -22,7 +23,7 @@ data class ScanBox(
     val isScanned: Boolean
 )
 
-class ScanAdapter(val items: List<TripDetailsTable>) : RecyclerView.Adapter<ScanAdapter.ScanViewHolder>() {
+class ScanAdapter(val items: List<DocketBox>) : RecyclerView.Adapter<ScanAdapter.ScanViewHolder>() {
 
     private val expandedPositions = mutableSetOf<String>()
 
@@ -50,7 +51,7 @@ class ScanAdapter(val items: List<TripDetailsTable>) : RecyclerView.Adapter<Scan
         val binding = holder.binding
 
         binding.tvDocketNo.text = item.docketNo
-
+       binding.tvDocketProgress.setText(item.boxesScanned.toString()+"/"+item.boxCountTotal.toString())
 
 
        // binding.tvDocketProgress.text = "$scannedCount/$totalCount"
