@@ -10,6 +10,8 @@ import android.provider.Settings
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.inputmethod.EditorInfo
+import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -42,6 +44,8 @@ import com.example.atomops.models.DocketBox
 import com.example.atomops.models.bulkids.BulkIdGenMod
 import com.example.atomops.models.bulkids.Item
 import com.example.atomops.models.closem.CloseMod
+import com.example.atomops.models.dispatch.Checklist
+import com.example.atomops.models.dispatch.DispatchMod
 import com.example.atomops.models.findbox.FIndBoxMod
 import com.example.atomops.models.loadphoto.LoadImageMod
 import com.example.atomops.models.loadtrip.LoadTripMod
@@ -148,7 +152,7 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
             binding.tvDocketCount.setText(docketItem.size.toString())
             adapter.submit(docketItem)
         }*/
-
+        //showReadyForDispatchDialog()
         clearBarcodeEdittext()
 
         // Filter hooks: connect these to whatever controls you add to the layout.
@@ -639,6 +643,8 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                     AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),tripId,mod)
                 if(resp.code()==200 || resp.code()==201){
                     Utils.showDialog(this@LoadingAct,"Success",resp.body()!!.message.toString(),R.drawable.green_check)
+
+                    showReadyForDispatchDialog()
                     deleteDatafronted()
                 }else{
                     Utils.geterrormessagewithcode(this@LoadingAct,resp.code(),"")
@@ -846,6 +852,58 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
         if(isloading){
             pd.show()
         }else pd.dismiss()
+    }
+
+    private fun showReadyForDispatchDialog() {
+        val view = layoutInflater.inflate(R.layout.dialog_ready_dispatch, null)
+
+        val vehicletype = view.findViewById<CheckBox>(R.id.vehicletype)
+        val cbtarpaulin = view.findViewById<CheckBox>(R.id.cbtarpaulin)
+        val cbLashingBelt = view.findViewById<CheckBox>(R.id.cbLashingBelt)
+        val cbgps = view.findViewById<CheckBox>(R.id.cbgps)
+        val digitallock = view.findViewById<CheckBox>(R.id.digitallock)
+        val btnCancel = view.findViewById<Button>(R.id.btnCancel)
+        val btnConfirm = view.findViewById<Button>(R.id.btnConfirm)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(view)
+            .setCancelable(false)
+            .create()
+
+        btnCancel.setOnClickListener { dialog.dismiss() }
+
+        btnConfirm.setOnClickListener {
+
+            val checklist=Checklist(digitallock.isChecked,
+                cbgps.isChecked,
+                cbLashingBelt.isChecked,
+                cbtarpaulin.isChecked,
+                vehicletype.isChecked
+                )
+            val mod= DispatchMod(AtomOpsApp.getPreferences(Constants.EMP_ID,""),checklist,"GENERAL",AtomOpsApp.getPreferences(Constants.COMP_CODE,"").toInt())
+            lifecycleScope.launch {
+             try {
+                 val resp=  ApiClient.getRetrofitclient().create(ServiceInterface::class.java).readyfordispatch(
+                     "Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),tripId,mod)
+                 if(resp.code()==200 || resp.code()==201 ){
+                     if(resp.body()!!.status.equals("SUCCESS")){
+                         Utils.showDialog(this@LoadingAct,"Success",resp.body()!!.message.toString(),R.drawable.green_check)
+                     }
+                     else   Utils.showDialog(this@LoadingAct,"Fail",resp.body()!!.message.toString(),R.drawable.ic_baseline_error_24)
+                 }
+                 else {
+                     Utils.geterrormessagewithcode(this@LoadingAct,resp.code(),"")
+                 }
+             }catch (e: Exception){
+                 Utils.gettrycatcherror(this@LoadingAct,e)
+             }
+            }
+            dialog.dismiss()
+
+        }
+
+        dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.white)
     }
 
 }

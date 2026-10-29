@@ -2,6 +2,7 @@ package com.example.atomops.networking
 import com.example.atomops.models.TokenMod
 import com.example.atomops.models.bulkids.BulkResp
 import com.example.atomops.models.closem.CloseMod
+import com.example.atomops.models.dispatch.DispatchMod
 import com.example.atomops.models.findbox.FindBoxResp
 import com.example.atomops.models.loadphoto.LoadImageMod
 import com.example.atomops.models.loadtrip.LoadTripMod
@@ -141,6 +142,14 @@ interface ServiceInterface   {
     ): Response<FindBoxResp>
     //anifests//loading/close
 
+
+    @POST("atom-movement/api/v1/manifests/{manifestId}/unloading/boxes/bulk")
+    suspend fun bulkUnLoadBoxes(
+        @Header("Authorization") auth: String,
+        @Path("manifestId") manifestId: String,
+        @Body mod: LoadTripMod
+    ): Response<FindBoxResp>
+
     @POST("atom-movement/api/v1/mm/manifests/{manifestId}/loading-photo")
     suspend fun loadingPhoto(
         @Header("Authorization") auth: String,
@@ -157,11 +166,26 @@ interface ServiceInterface   {
         @Body mod: CloseMod
     ): Response<FindBoxResp>
 
+    @POST("atom-movement/api/v1/manifests/{manifestId}/unloading/close")
+    suspend fun UnLoadingClose(
+        @Header("Authorization") auth: String,
+        @Path("manifestId") manifestId: String,
+        @Body mod: CloseMod
+    ): Response<FindBoxResp>
+
     @POST("atom-movement/api/v1/trips/{trip}/seal")
     suspend fun loadingseal(
         @Header("Authorization") auth: String,
         @Path("trip") trip: String,
         @Body mod: SealMod
+    ): Response<FindBoxResp>
+
+
+    @POST("atom-movement/api/v1/trips/{trip}/dispatch-ready")
+    suspend fun readyfordispatch(
+        @Header("Authorization") auth: String,
+        @Path("trip") trip: String,
+        @Body mod: DispatchMod
     ): Response<FindBoxResp>
 
 

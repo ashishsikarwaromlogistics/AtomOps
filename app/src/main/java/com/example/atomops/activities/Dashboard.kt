@@ -24,7 +24,7 @@ class Dashboard : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-         AtomOpsApp.savePreferences(Constants.BCODE,"1002")
+         AtomOpsApp.savePreferences(Constants.BCODE,"1003")
 
          setText()
          setclick()
