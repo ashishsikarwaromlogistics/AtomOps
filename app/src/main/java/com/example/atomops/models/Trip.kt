@@ -28,3 +28,7 @@ data class Trip(
     val routeText: String
         get() = "$origin → $via → $destination"
 }
+
+
+
+//

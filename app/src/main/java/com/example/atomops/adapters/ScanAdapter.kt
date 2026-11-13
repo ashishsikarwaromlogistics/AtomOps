@@ -23,7 +23,7 @@ data class ScanBox(
     val isScanned: Boolean
 )
 
-class ScanAdapter(val items: List<DocketBox>) : RecyclerView.Adapter<ScanAdapter.ScanViewHolder>() {
+class ScanAdapter(private val allItems: List<DocketBox>) : RecyclerView.Adapter<ScanAdapter.ScanViewHolder>() {
 
     private val expandedPositions = mutableSetOf<String>()
 
@@ -90,6 +90,14 @@ class ScanAdapter(val items: List<DocketBox>) : RecyclerView.Adapter<ScanAdapter
 
 
         }
+    }
+    private var items: List<DocketBox> = allItems   // currently displayed list
+
+    fun setQuery(query: String) {
+        val q = query.trim()
+        items = if (q.isEmpty()) allItems
+        else allItems.filter { it.docketNo.contains(q, ignoreCase = true) }
+        notifyDataSetChanged()
     }
 
     override fun getItemCount(): Int = items.size

@@ -18,6 +18,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.atomops.AppProgressDialog
 import com.example.atomops.AtomOpsApp
 import com.example.atomops.Constants
 import com.example.atomops.R
@@ -46,6 +47,19 @@ class BoxDetailsAct : AppCompatActivity() {
     private lateinit var docketno: String
     private lateinit var barcodedao: BarcodeDao
     private var photoFile: File? = null
+
+
+    val appprogress: AppProgressDialog by lazy { AppProgressDialog(this) }
+    private fun ShowDailog(){
+        if(!appprogress.isShowing){
+            appprogress.show()
+        }
+    }
+    private fun DismissDialog(){
+        if(appprogress.isShowing){
+            appprogress.dismiss()
+        }
+    }
 
     private val cameraLauncher =
         registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->

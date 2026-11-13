@@ -14,7 +14,7 @@ import com.example.atomops.R
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class AddSealBottomSheet(
-    private val onSubmit: (sealNumber: String, photoUri: Uri) -> Unit
+    private val onSubmit: (sealNumber: String) -> Unit
 ) : BottomSheetDialogFragment() {
 
     private lateinit var etSealNumber: EditText
@@ -54,11 +54,9 @@ class AddSealBottomSheet(
             val uri = photoUri
             when {
                 seal.isEmpty() -> etSealNumber.error = "Enter seal number"
-                uri == null -> Toast.makeText(
-                    requireContext(), "Please upload seal photo", Toast.LENGTH_SHORT
-                ).show()
+
                 else -> {
-                    onSubmit(seal, uri)
+                    onSubmit(seal)
                     dismiss()
                 }
             }

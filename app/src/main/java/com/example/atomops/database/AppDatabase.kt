@@ -7,17 +7,20 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.atomops.database.daos.BarcodeDao
+import com.example.atomops.database.daos.LocalLoadbarcodeDao
 import com.example.atomops.database.daos.TripDetailsDao
 import com.example.atomops.database.daos.UserDao
 import com.example.atomops.database.tables.BarcodeTable
+import com.example.atomops.database.tables.LocalLoadbarcode
 import com.example.atomops.database.tables.TripDetailsTable
 import com.example.atomops.database.tables.User
 
-@Database(entities = [User::class, TripDetailsTable::class, BarcodeTable::class], version = 1, exportSchema = true)
+@Database(entities = [User::class, TripDetailsTable::class, BarcodeTable::class, LocalLoadbarcode::class], version = 1, exportSchema = true)
     abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun tripDetailDao(): TripDetailsDao
     abstract fun getBarcodeDao(): BarcodeDao
+    abstract fun getLocalLoadbarcode(): LocalLoadbarcodeDao
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null

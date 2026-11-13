@@ -6,10 +6,22 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.databinding.DataBindingUtil
+import com.example.atomops.AppProgressDialog
 import com.example.atomops.R
 import com.example.atomops.databinding.ActivityYardMgmtBinding
 
 class YardMgmtAct : AppCompatActivity() {
+    val appprogress: AppProgressDialog by lazy { AppProgressDialog(this) }
+    private fun ShowDailog(){
+        if(!appprogress.isShowing){
+            appprogress.show()
+        }
+    }
+    private fun DismissDialog(){
+        if(appprogress.isShowing){
+            appprogress.dismiss()
+        }
+    }
     lateinit var binding: ActivityYardMgmtBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

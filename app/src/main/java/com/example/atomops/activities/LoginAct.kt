@@ -12,6 +12,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.util.Util
+import com.example.atomops.AppProgressDialog
 import com.example.atomops.AtomOpsApp
 import com.example.atomops.Constants
 import com.example.atomops.R
@@ -27,6 +28,17 @@ import kotlinx.coroutines.launch
 class LoginAct : AppCompatActivity() {
     lateinit var binding: ActivityLoginBinding
     lateinit var pd: ProgressDialog
+    val appprogress: AppProgressDialog by lazy { AppProgressDialog(this) }
+    private fun ShowDailog(){
+        if(!appprogress.isShowing){
+            appprogress.show()
+        }
+    }
+    private fun DismissDialog(){
+        if(appprogress.isShowing){
+            appprogress.dismiss()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,17 +61,25 @@ class LoginAct : AppCompatActivity() {
         }
         pd= ProgressDialog(this)
         binding.btnLogin.setOnClickListener {
+            if(binding.etUserId.text.toString().isEmpty()|| binding.etPassword.text.toString().isEmpty()){
+
+              validateCred() }
+            else{
             pd.show()
             lifecycleScope.launch {
+                ShowDailog()
                 val deviceinfo= DeviceInfo(Utils.getDeviceIMEI(this@LoginAct),"Scanner", Utils.getLocalIpAddress(),"Android")
              //   val mod= LoginMod(deviceinfo, password = "K8CSU646m42$",username = "ashis")
                 //val mod= LoginMod(deviceinfo, password = "asdfghjkl",username = "vaibhav21")
-                val mod= LoginMod(deviceinfo, password = "asdfghjkl",username = "amit.shah")
+             //   val mod= LoginMod(deviceinfo, password = "asdfghjkl",username = "amit.shah")
                 //val mod= LoginMod(deviceinfo, password = "Chandan@1998",username = "mis.admin.400021")
-             //   val mod= LoginMod(deviceinfo, password = binding.etPassword.text.toString(),username = binding.etUserId.text.toString())
+
+
+                val mod= LoginMod(deviceinfo, password = binding.etPassword.text.toString(),username = binding.etUserId.text.toString())
                 try {
                     val resp= ApiClient.getRetrofitclient().create(ServiceInterface::class.java).Login(mod)
                     pd.dismiss()
+                    DismissDialog()
                     if (resp?.isSuccessful == true && resp.body()?.status == "success") {
                         val data = resp.body()?.data
                         if (data != null) {
@@ -118,15 +138,94 @@ class LoginAct : AppCompatActivity() {
                     }
                 }
                 catch (e: Exception){
+                    DismissDialog()
                     pd.dismiss()
                    Utils.showDialog(this@LoginAct,"error", Utils.getErrorMessage(e),R.drawable.ic_baseline_error_24)
                 }
 
 
-            }
+            }}
 
         }
     }
+
+    private fun validateCred() {
+     lifecycleScope.launch {
+         val deviceinfo= DeviceInfo(Utils.getDeviceIMEI(this@LoginAct),"Scanner", Utils.getLocalIpAddress(),"Android")
+         val mod= LoginMod(deviceinfo, password = "asdfghjkl",username = "amit.shah")
+         try {
+             ShowDailog()
+             val resp= ApiClient.getRetrofitclient().create(ServiceInterface::class.java).Login(mod)
+             pd.dismiss()
+             if (resp?.isSuccessful == true && resp.body()?.status == "success") {
+                 DismissDialog()
+                 val data = resp.body()?.data
+                 if (data != null) {
+                     // Save tokens securely, then navigate
+                     val token = "${data.tokenType.trim()} ${data.accessToken}"
+                     val payload = JwtDecoder.decodePayload(token)
+
+                     if (payload != null) {
+
+                         // Get String and numeric values
+                         val companyCode = payload.optInt("companyCode")
+                         val branchCode = payload.optString("branchCode")
+                         val companyId = payload.optString("companyId")
+                         val userId = payload.optString("userId")
+                         val username = payload.optString("sub")
+                         val emailId = payload.optString("emailId")
+                         val tokenType = payload.optString("type")
+
+                         // Get Boolean value
+                         val allIndia = payload.optBoolean("allIndia")
+
+                         // Get token timestamps
+                         val issuedAt = payload.optLong("iat")
+                         val expiry = payload.optLong("exp")
+                         AtomOpsApp.savePreferences(Constants.BCODE,branchCode)
+                         AtomOpsApp.savePreferences(Constants.BNAME,"")
+                         AtomOpsApp.savePreferences(Constants.COMP_CODE,companyCode.toString())
+
+                         Log.d("JWT", "Company Code: $companyCode")
+                         Log.d("JWT", "Branch Code: $branchCode")
+                         Log.d("JWT", "Company ID: $companyId")
+                         Log.d("JWT", "User ID: $userId")
+                         Log.d("JWT", "Username: $username")
+                         Log.d("JWT", "Email: $emailId")
+                         Log.d("JWT", "Token Type: $tokenType")
+                         Log.d("JWT", "All India: $allIndia")
+                         Log.d("JWT", "Issued At: $issuedAt")
+                         Log.d("JWT", "Expiry: $expiry")
+                     }
+                     AtomOpsApp.savePreferences(Constants.ID,data.user.id)
+                     AtomOpsApp.savePreferences(Constants.EMP_CODE,data.user.username)
+                     AtomOpsApp.savePreferences(Constants.EMP_ID,data.user.id)
+                     AtomOpsApp.savePreferences(Constants.EMPNAME,data.user.firstName+" "+data.user.lastName)
+                     AtomOpsApp.savePreferences(Constants.EMAIL,data.user.email)
+                     AtomOpsApp.savePreferences(Constants.JWTTOKEN,data.accessToken)
+                     AtomOpsApp.savePreferences(Constants.REFRESH,data.refreshToken)
+                     AtomOpsApp.savePreferences(Constants.ISLOGIN,"true")
+
+                     startActivity(Intent(this@LoginAct, Dashboard::class.java))
+                     //    startActivity(Intent(this@LoginAct, BoxDetailsAct::class.java))
+                 } else {
+                     showError("Login failed")
+                 }
+             } else {
+                 DismissDialog()
+                 Utils.showDialog(this@LoginAct,"error", Utils.getHttpErrorMessage(resp!!.code(),""),R.drawable.ic_baseline_error_24)
+             }
+         }
+         catch (e: Exception){
+             DismissDialog()
+             pd.dismiss()
+             Utils.showDialog(this@LoginAct,"error", Utils.getErrorMessage(e),R.drawable.ic_baseline_error_24)
+         }
+         Utils.showDialog(this@LoginAct,"error", "Please enter valid User id or Password",R.drawable.ic_baseline_error_24)
+
+     }
+    }
+
     private fun showError(msg: String) {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }

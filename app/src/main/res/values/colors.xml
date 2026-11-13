@@ -135,4 +135,10 @@
     <color name="hint_grey">#667085</color>
     <color name="upload_bg">#EBFEFE</color>
     <color name="upload_icon_tint">#0A3570</color>
+
+    <color name="progress_surface">#1F2937</color>
+    <color name="progress_accent">#818CF8</color>
+
+    <color name="progress_text_primary">#F9FAFB</color>
+    <color name="progress_text_secondary">#9CA3AF</color>
 </resources>

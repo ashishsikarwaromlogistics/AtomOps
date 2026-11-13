@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import com.example.atomops.AppProgressDialog
 import com.example.atomops.AtomOpsApp
 import com.example.atomops.Constants
 import com.example.atomops.R
@@ -19,6 +20,17 @@ import com.example.atomops.utils.Utils
 import kotlinx.coroutines.launch
 
 class Splash : AppCompatActivity() {
+    val appprogress: AppProgressDialog by lazy { AppProgressDialog(this) }
+    private fun ShowDailog(){
+        if(!appprogress.isShowing){
+            appprogress.show()
+        }
+    }
+    private fun DismissDialog(){
+        if(appprogress.isShowing){
+            appprogress.dismiss()
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -70,6 +82,7 @@ class Splash : AppCompatActivity() {
     private fun reReshToken() {
         lifecycleScope.launch {
             try {
+                ShowDailog()
                 val response = ApiClient.getRetrofitclient()
                     .create(ServiceInterface::class.java)
                     .refreshToken(TokenMod(AtomOpsApp.getPreferences(Constants.REFRESH, "")))
@@ -84,7 +97,9 @@ class Splash : AppCompatActivity() {
                 } else {
                     showRetryDialog("Error(${response.code()})", Utils.getHttpErrorMessage(response.code(),""))
                 }
+                DismissDialog()
             } catch (e: Exception) {
+                DismissDialog()
                 showRetryDialog("Error", Utils.getErrorMessage(e))
             }
         }

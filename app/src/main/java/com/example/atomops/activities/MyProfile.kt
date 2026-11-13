@@ -9,6 +9,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.lifecycleScope
 import com.example.atomops.AccountSecurityBottomSheet
+import com.example.atomops.AppProgressDialog
 import com.example.atomops.AtomOpsApp
 import com.example.atomops.Constants
 import com.example.atomops.R
@@ -22,6 +23,17 @@ import kotlinx.coroutines.launch
 
 class MyProfile : AppCompatActivity() {
 lateinit var binding: ActivityMyProfileBinding
+    val appprogress: AppProgressDialog by lazy { AppProgressDialog(this) }
+    private fun ShowDailog(){
+        if(!appprogress.isShowing){
+            appprogress.show()
+        }
+    }
+    private fun DismissDialog(){
+        if(appprogress.isShowing){
+            appprogress.dismiss()
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -31,6 +43,7 @@ lateinit var binding: ActivityMyProfileBinding
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+        binding.ivBack.setOnClickListener { finish() }
         binding.tvName.setText(AtomOpsApp.getPreferences(Constants.EMPNAME,""))
         binding.tvEmpId.setText(AtomOpsApp.getPreferences(Constants.EMP_CODE,""))
         binding.tvEmployeeId.setText(AtomOpsApp.getPreferences(Constants.ID,""))

@@ -22,10 +22,10 @@
 
             <ImageView
                 android:id="@+id/ivBack"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="8dp"
-                android:padding="8dp"
+                android:layout_width="@dimen/_30sdp"
+                android:layout_height="@dimen/_30sdp"
+                android:layout_marginStart="@dimen/_4sdp"
+                android:padding="@dimen/_5sdp"
                 android:src="@drawable/ic_back"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -467,7 +467,15 @@
                         </LinearLayout>
 
                         <!-- ===== Driver ===== -->
-                        <com.google.android.material.card.MaterialCardView
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/rvDrivers"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:nestedScrollingEnabled="false"
+                            android:overScrollMode="never"
+                            tools:listitem="@layout/item_driver"/>
+                        <!--<com.google.android.material.card.MaterialCardView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/_14sdp"
@@ -513,7 +521,7 @@
                                         android:id="@+id/tvDriverName"
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
-                                        android:text="DRI12678 -  Ramesh Kumar"
+                                        android:text=""
                                         android:textColor="#111827"
                                         android:textSize="@dimen/_10ssp" />
                                 </LinearLayout>
@@ -533,7 +541,7 @@
                                         app:tint="#0F3D6B" />
                                 </FrameLayout>
                             </LinearLayout>
-                        </com.google.android.material.card.MaterialCardView>
+                        </com.google.android.material.card.MaterialCardView>-->
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>

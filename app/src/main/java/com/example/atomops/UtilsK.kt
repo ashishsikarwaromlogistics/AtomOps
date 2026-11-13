@@ -1,7 +1,10 @@
 package com.example.atomops
+import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.net.Uri
 import androidx.exifinterface.media.ExifInterface
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -82,6 +85,13 @@ class UtilsK {
             val result = File(source.parentFile, "compressed_${source.name}")
             result.outputStream().use { it.write(out.toByteArray()) }
             result
+        }
+
+          fun dialNumber(context: Context, number: String) {
+            val intent = Intent(Intent.ACTION_DIAL).apply {
+                data = Uri.parse("tel:$number")
+            }
+            context. startActivity(intent)
         }
     }
 

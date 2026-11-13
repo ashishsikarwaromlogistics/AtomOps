@@ -9,6 +9,7 @@ import androidx.core.view.updatePadding
 import androidx.core.widget.addTextChangedListener
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.atomops.AppProgressDialog
 import com.example.atomops.R
 import com.example.atomops.adapters.RequestAdapter
 import com.example.atomops.databinding.ActivityReqMngmtBinding
@@ -26,6 +27,17 @@ class ReqMngmtAct : AppCompatActivity() {
 
     private var allRequests: List<PickupRequest> = emptyList()
     private var selectedStatus: RequestStatus? = null   // null = All
+    val appprogress: AppProgressDialog by lazy { AppProgressDialog(this) }
+    private fun ShowDailog(){
+        if(!appprogress.isShowing){
+            appprogress.show()
+        }
+    }
+    private fun DismissDialog(){
+        if(appprogress.isShowing){
+            appprogress.dismiss()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

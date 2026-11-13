@@ -1,12 +1,74 @@
-# Add project specific R8 rules here.
-# AGP will combine all keep rule files in src/main/keepRules to pass to R8
-#
-# For more details, see
-#   https://d.android.com/r/tools/r8/keep-rules
+# Location: app/src/main/keepRules/rules.keep
+# AGP combines every *.keep file in src/main/keepRules and passes it to R8.
+# Tailored for: Retrofit + Gson, OkHttp, java-jwt (Jackson), Glide, Room, Hilt, Compose.
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# ------------------------------------------------------------------
+# 1. Crash reports (upload mapping.txt to Play Console / Crashlytics)
+# ------------------------------------------------------------------
+-keepattributes SourceFile, LineNumberTable
+-renamesourcefileattribute SourceFile
+
+# ------------------------------------------------------------------
+# 2. Attributes needed by reflection-based libraries
+# ------------------------------------------------------------------
+-keepattributes Signature, *Annotation*, InnerClasses, EnclosingMethod
+
+# ------------------------------------------------------------------
+# 3. Your models (Gson serializes/deserializes these by field name)
+# ------------------------------------------------------------------
+-keep class com.example.atomops.models.** { *; }
+# If you add other DTO packages (e.g. network request/response classes),
+# add the same rule for them, for example:
+# -keep class com.example.atomops.network.dto.** { *; }
+
+# ------------------------------------------------------------------
+# 4. Gson (converter-gson 2.9.0 pulls Gson 2.8.x, which ships no rules)
+# ------------------------------------------------------------------
+-keep class * extends com.google.gson.TypeAdapter
+-keep class * implements com.google.gson.TypeAdapterFactory
+-keep class * implements com.google.gson.JsonSerializer
+-keep class * implements com.google.gson.JsonDeserializer
+-keepclassmembers,allowobfuscation class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+-keep class com.google.gson.reflect.TypeToken { *; }
+-keep class * extends com.google.gson.reflect.TypeToken
+
+# ------------------------------------------------------------------
+# 5. Retrofit (needed for suspend functions + R8 full mode on 2.9.0)
+# ------------------------------------------------------------------
+-keepclassmembers,allowshrinking,allowobfuscation interface * {
+    @retrofit2.http.* <methods>;
+}
+-if interface * { @retrofit2.http.* <methods>; }
+-keep,allowobfuscation interface <1>
+-keep,allowobfuscation,allowshrinking interface retrofit2.Call
+-keep,allowobfuscation,allowshrinking class retrofit2.Response
+-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
+-dontwarn retrofit2.KotlinExtensions
+-dontwarn retrofit2.KotlinExtensions$*
+
+# ------------------------------------------------------------------
+# 6. OkHttp / Okio optional platform classes
+# ------------------------------------------------------------------
+-dontwarn okhttp3.internal.platform.**
+-dontwarn org.conscrypt.**
+-dontwarn org.bouncycastle.**
+-dontwarn org.openjsse.**
+
+# ------------------------------------------------------------------
+# 7. java-jwt (com.auth0) + Jackson (reflection-based)
+# ------------------------------------------------------------------
+-keep class com.auth0.jwt.** { *; }
+-keep class com.fasterxml.jackson.annotation.** { *; }
+-keepnames class com.fasterxml.jackson.** { *; }
+-dontwarn com.fasterxml.jackson.databind.**
+-dontwarn java.beans.**
+-dontwarn org.w3c.dom.bind.**
+-dontwarn javax.xml.bind.**
+
+# ------------------------------------------------------------------
+# Not needed (these ship their own consumer rules or use generated code):
+# Room, Hilt/Dagger, Compose, Coroutines, Glide (no AppGlideModule),
+# CircleImageView, ExifInterface, ViewBinding/DataBinding.
+# ------------------------------------------------------------------

@@ -1,6 +1,8 @@
 package com.example.atomops.utils;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.provider.Settings;
@@ -8,6 +10,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.example.atomops.R;
+import com.example.atomops.activities.LoginAct;
 import com.google.gson.JsonSyntaxException;
 
 import java.io.IOException;
@@ -114,7 +117,7 @@ public class Utils {
     }
 
     public static void showDialog(Context con, String title, String msg,String positivebtn,String negativebutton, int icon, Runnable onOkClick,
-                                   Runnable onOkClick1) {
+                                  Runnable onOkClick1) {
         try {
             new android.app.AlertDialog.Builder(con)
                     .setTitle(title)
@@ -130,6 +133,27 @@ public class Utils {
                         dialog.dismiss();
                         if (onOkClick1 != null) onOkClick1.run(); // Call the callback
                     })
+
+                    .show();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void showDialog(Context con, String title, String msg, int icon, Runnable onOkClick
+                                   ) {
+        try {
+            new android.app.AlertDialog.Builder(con)
+                    .setTitle(title)
+                    .setIcon(icon)
+                    .setMessage(msg)
+                    .setCancelable(false)
+                    .setPositiveButton("OK", (dialog, id) -> {
+                        dialog.dismiss();
+                        if (onOkClick != null) onOkClick.run(); // Call the callback
+                    })
+
+
 
                     .show();
         } catch (Exception e) {
@@ -183,10 +207,27 @@ public class Utils {
         }
     }
 
+    public static void handleHttpError(Activity activity, int code) {
+        Toast.makeText(activity, getHttpErrorMessage(code,""), Toast.LENGTH_LONG).show();
+
+        if (code == 401) {
+            // Optional: clear saved token/session here
+            // SessionManager.clear(activity);
+
+            Intent intent = new Intent(activity, LoginAct.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            activity.startActivity(intent);
+            activity.finish();
+        }
+    }
+
 
     public static void gettrycatcherror(Context con,Throwable e){
         showDialog(con,"error",getErrorMessage(e), R.drawable.ic_baseline_error_24);
     }
+
+
+
 
 
     /** Converts any exception into a human-readable message. */
@@ -229,6 +270,7 @@ public class Utils {
     public static String GenrateUUID(){
         return  UUID.randomUUID().toString();
     }
+
 
 
 }

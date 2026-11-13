@@ -1,0 +1,32 @@
+package com.example.atomops.models.localtrips
+
+data class Item(
+    val ba_code: Any,
+    val branch_code: String,
+    val capacity_utilization_pct: Double,
+    val completed_stops: Int,
+    val created_on: String,
+    val dock_code: String,
+    val docket_count: Int,
+    val driver_code: Int,
+    val driver_name: String,
+    val driver_phone: Any,
+    val loader_code: Int,
+    val loader_name: Any,
+    val priority: Any,
+    val route_name: Any,
+    val stop_count: Int,
+    val total_boxes: Int,
+    val total_cn_count: Int,
+    val total_prq_count: Int,
+    val total_stops: Int,
+    val total_weight: Int,
+    val trip_date: String,
+    val trip_mode: String,
+    val trip_no: String,
+    val trip_progress_pct: Int,
+    val trip_status: String,
+    val trip_type: String,
+    val vehicle_no: String,
+    val vehicle_type: Any
+)

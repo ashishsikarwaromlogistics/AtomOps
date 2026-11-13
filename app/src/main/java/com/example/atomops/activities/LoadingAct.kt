@@ -2,6 +2,7 @@ package com.example.atomops.activities
 
 import android.Manifest
 import android.app.ProgressDialog
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -9,7 +10,9 @@ import android.os.Bundle
 import android.provider.Settings
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
@@ -24,10 +27,12 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.widget.doAfterTextChanged
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.SimpleItemAnimator
+import com.example.atomops.AppProgressDialog
 import com.example.atomops.AtomOpsApp
 import com.example.atomops.Constants
 import com.example.atomops.R
@@ -85,6 +90,17 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
     var manifestList: List<String> = mutableListOf()
      var selectedPosition=0
     lateinit var pd: ProgressDialog
+    val appprogress: AppProgressDialog by lazy { AppProgressDialog(this) }
+    private fun ShowDailog(){
+        if(!appprogress.isShowing){
+            appprogress.show()
+        }
+    }
+    private fun DismissDialog(){
+        if(appprogress.isShowing){
+            appprogress.dismiss()
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -94,6 +110,8 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
+
         pd= ProgressDialog(this)
       //  addseal()
         tripId=intent.getStringExtra("tripid").toString()
@@ -102,13 +120,22 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
         textToSpeech = TextToSpeech(this, this)
         tripDetailsDao = (application as AtomOpsApp).database.tripDetailDao()
         barcodedao = (application as AtomOpsApp).database.getBarcodeDao()
+        binding.ivBack.setOnClickListener { finish() }
         setupManifestTabs()
 
         binding.rvDockets.setHasFixedSize(false)
         binding.rvDockets.layoutManager = LinearLayoutManager(this)
         (binding.rvDockets.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
+        binding.ivProfile.setOnClickListener {
+            startActivity(Intent(this, MyProfile::class.java))
+        }
+        binding.ivSearch.setOnClickListener { toggleSearch() }
 
-
+        binding.etSearch.doAfterTextChanged {
+            if (::scanapdater.isInitialized) {
+                scanapdater.setQuery(it?.toString().orEmpty())
+            }
+        }
        /* lifecycleScope.launch {
             docketlist = tripDetailsDao.getByTrip(tripId)
             docketItem = docketlist.map { trip ->
@@ -190,6 +217,7 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun Generateevenidbulk(){
         if(Utils.haveInternet(this)){
+            ShowDailog()
             lifecycleScope.launch {
                 val items: MutableList<Item> = mutableListOf()
                 val a=   barcodedao.getByTrip(tripId)
@@ -218,6 +246,7 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                 try {
                     val resp=  ApiClient.getRetrofitclient().create(ServiceInterface::class.java).bulkScan("Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),mod)
                     if(resp.code()==200){
+                        DismissDialog()
                         if(resp.body()!!.status.equals("SUCCESS")){
                             //601769  //  Utils.showDialog(this@LoadingAct,"success",resp.body().message.toString(),R.drawable.ic_baseline_check_circle_24)
                             var errors=""
@@ -232,8 +261,13 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                                 Utils.showDialog(this@LoadingAct,"error",errors,R.drawable.ic_baseline_error_24)
                             }else{//now check condtion of all boxes are they scan or not or should short remarks be given
                                 val   listofboxes= barcodedao.getPendingBoxes(currentManifest)
-                                if(listofboxes.size==0)
-                                    saveData()
+                                if(listofboxes.size==0){
+                                    Utils.showDialog(this@LoadingAct,"Alert","Do you want save this manifest",R.drawable.green_check,{
+                                       if(Utils.haveInternet(this@LoadingAct))
+                                        saveData()
+                                    })
+                                }
+
                                 else {
                                     Utils.showDialog(this@LoadingAct,"please scan Remaining box Status",listofboxes.toString(),R.drawable.ic_baseline_error_24)
 
@@ -242,10 +276,13 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                         }
                     }
                     else {
-                        Utils.showDialog(this@LoadingAct,"error"+resp.code(), Utils.getHttpErrorMessage(resp.code(),resp.errorBody().toString()),R.drawable.ic_baseline_error_24)
+                        DismissDialog()
+                        Utils.handleHttpError(this@LoadingAct,resp.code())
+                       // Utils.showDialog(this@LoadingAct,"error"+resp.code(), Utils.handleHttpError(this@LoadingAct,resp.code()),R.drawable.ic_baseline_error_24)
 
                     }
                 }catch (e: Exception) {
+                    DismissDialog()
                     Utils.gettrycatcherror(this@LoadingAct,e)
                 }
 
@@ -466,6 +503,7 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
           // docketlist = tripDetailsDao.getByTrip(tripId)
            scanapdater = ScanAdapter(docketlist)
            binding.rvDockets.adapter = scanapdater
+           scanapdater.setQuery(binding.etSearch.text.toString())
           if(Utils.haveInternet(this@LoadingAct)){
               val mydocketlist=mutableListOf<String>()
               for(i in docketlist){
@@ -555,6 +593,7 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun saveData(){
+        ShowDailog()
         lifecycleScope.launch {
             val shortbox=mutableListOf<ShortBoxe>()// MutableList<ShortBoxe>()
         val myshorbox=barcodedao.getByManifestshort(manifest = currentManifest)
@@ -579,18 +618,23 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
          try {
              val resp=ApiClient.getRetrofitclient().create(ServiceInterface::class.java).bulkLoadBoxes("Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),currentManifest,mod)
              if(resp.code()==200){
+                 DismissDialog()
                  if(resp.body()!!.status.equals("SUCCESS")){
                      barcodedao.updateLoadstatus(currentManifest)
-                     LaodingImage()
-                     Utils.showDialog(this@LoadingAct,"SUCCESS",resp.body()!!.message.toString(),R.drawable.green_check)
+
+                     Utils.showDialog(this@LoadingAct,"SUCCESS",resp.body()!!.message.toString(),R.drawable.green_check,{
+                        if(Utils.haveInternet(this@LoadingAct)) LaodingImage()
+                     })
                  }
                  else   Utils.showDialog(this@LoadingAct,"Fail",resp.body()!!.message.toString(),R.drawable.green_check)
 
              }
              else {
+                 DismissDialog()
                  Utils.geterrormessagewithcode(this@LoadingAct,resp.code(),"")
              }
          }catch (e: Exception){
+             DismissDialog()
              Utils.gettrycatcherror(this@LoadingAct,e)
          }
 
@@ -598,6 +642,7 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
 
     fun LaodingImage(){
+        ShowDailog()
         captureAndUpload { path, success ->
             if (success && path != null) {
                // closeSeal(sealNumber,path)
@@ -608,7 +653,7 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                         captureStage = "LOAD_100_PERCENT",
                         geoLat  =56.43324,
                         geoLong=56.43324,
-                        photoUrl=path
+                        photoDocumentId=path
                     )
                     val response=  ApiClient.getRetrofitclient().create(ServiceInterface::class.java).loadingPhoto(
                         "Bearer " + AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""),
@@ -618,12 +663,19 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                         mod
                     )
                     if(response.code()==200 || response.code()==201){
-                        LoadingClose()
+                        DismissDialog()
+                        Utils.showDialog(this@LoadingAct,"Message","Are you sure want to Close this Loading?",R.drawable.green_check,{
+                            if(Utils.haveInternet(this@LoadingAct))
+                                LoadingClose()
+                        })
+
                     }
+                    else DismissDialog()
                 }
                 Log.d("Upload", "Done, file at: $path")
                 // e.g. show preview: ivPreview.setImageURI(Uri.fromFile(File(path)))
             } else {
+                DismissDialog()
                 Log.d("Upload", "Failed or cancelled")
             }
         }
@@ -632,6 +684,7 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     fun closeSeal(sealNumber: String, photoUri: String) {
+        ShowDailog()
         lifecycleScope.launch {
             try {
                 val mod= SealMod(AtomOpsApp.getPreferences(Constants.EMP_ID,""),
@@ -640,20 +693,32 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                     sealNumber,
                     "PHYSICAL")
                 val resp= ApiClient.getRetrofitclient().create(ServiceInterface::class.java).loadingseal(
-                    AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),tripId,mod)
+                    "Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),tripId,mod)
                 if(resp.code()==200 || resp.code()==201){
-                    Utils.showDialog(this@LoadingAct,"Success",resp.body()!!.message.toString(),R.drawable.green_check)
+                    DismissDialog()
+                    /*Utils.showDialog(this@LoadingAct,"Success",resp.body()!!.message.toString(),R.drawable.green_check,{
 
-                    showReadyForDispatchDialog()
+                    })*/
+                    Utils.showDialog(this@LoadingAct,"Success",resp.body()!!.message.toString()+"\n"+"Ready for Dispatch?",R.drawable.green_check,
+                        {
+                            if(Utils.haveInternet(this@LoadingAct))
+                                showReadyForDispatchDialog()
+
+                        })
+
+                   // showReadyForDispatchDialog()
                     deleteDatafronted()
                 }else{
+                    DismissDialog()
                     Utils.geterrormessagewithcode(this@LoadingAct,resp.code(),"")
                 }
             }catch (e: Exception){
+                DismissDialog()
                 Utils.gettrycatcherror(this@LoadingAct,e)
             }}
     }
     fun LoadingClose() {
+        ShowDailog()
         lifecycleScope.launch {
             try {
                 val isAllBoxLoaded = barcodedao.areAllBoxesLoaded(tripId)
@@ -676,18 +741,22 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                 val resp = ApiClient.getRetrofitclient()
                     .create(ServiceInterface::class.java)
                     .LoadingClose(
-                        AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""),
+                        "Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""),
                         currentManifest,
                         mod
                     )
 
                 if (resp.code() == 200) {
+                    DismissDialog()
                     if (selectedPosition < manifestList.size - 1) {
                         selectedPosition++
                         selectTab(selectedPosition)
                         onManifestSelected(manifestList[selectedPosition], selectedPosition)
                     } else {
-                        addseal()
+                        Utils.showDialog(this@LoadingAct,"Success","Do you want to close Seal?",R.drawable.green_check,{
+                            addseal()
+                        })
+
                     }
 
                     Utils.showDialog(
@@ -697,6 +766,7 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                         R.drawable.green_check
                     )
                 } else {
+                    DismissDialog()
                     // Error payload lives in errorBody(), not body()
                     val errorMsg = try {
                         val json = JSONObject(resp.errorBody()?.string() ?: "")
@@ -713,6 +783,7 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                     )
                 }
             } catch (e: Exception) {
+                DismissDialog()
                 Utils.gettrycatcherror(this@LoadingAct, e)
             }
         }
@@ -721,10 +792,12 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
 
 
     fun addseal(){
-        AddSealBottomSheet { sealNumber, photoUri ->
+
+        AddSealBottomSheet { sealNumber ->
             // call your Gate Out API here
             captureAndUpload { path, success ->
                 if (success && path != null) {
+                    if(Utils.haveInternet(this@LoadingAct))
                     closeSeal(sealNumber,path)
                     Log.d("Upload", "Done, file at: $path")
                     // e.g. show preview: ivPreview.setImageURI(Uri.fromFile(File(path)))
@@ -883,18 +956,22 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
             val mod= DispatchMod(AtomOpsApp.getPreferences(Constants.EMP_ID,""),checklist,"GENERAL",AtomOpsApp.getPreferences(Constants.COMP_CODE,"").toInt())
             lifecycleScope.launch {
              try {
+                 ShowDailog()
                  val resp=  ApiClient.getRetrofitclient().create(ServiceInterface::class.java).readyfordispatch(
                      "Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),tripId,mod)
                  if(resp.code()==200 || resp.code()==201 ){
+                     DismissDialog()
                      if(resp.body()!!.status.equals("SUCCESS")){
                          Utils.showDialog(this@LoadingAct,"Success",resp.body()!!.message.toString(),R.drawable.green_check)
                      }
                      else   Utils.showDialog(this@LoadingAct,"Fail",resp.body()!!.message.toString(),R.drawable.ic_baseline_error_24)
                  }
                  else {
+                     DismissDialog()
                      Utils.geterrormessagewithcode(this@LoadingAct,resp.code(),"")
                  }
              }catch (e: Exception){
+                 DismissDialog()
                  Utils.gettrycatcherror(this@LoadingAct,e)
              }
             }
@@ -905,5 +982,21 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
         dialog.show()
         dialog.window?.setBackgroundDrawableResource(android.R.color.white)
     }
+    private fun toggleSearch() {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val opening = binding.etSearch.visibility != View.VISIBLE
 
+        if (opening) {
+            binding.tvTripId.visibility = View.GONE
+            binding.etSearch.visibility = View.VISIBLE
+            binding.etSearch.requestFocus()
+            imm.showSoftInput(binding.etSearch, InputMethodManager.SHOW_IMPLICIT)
+        } else {
+            binding.etSearch.setText("")            // also resets the list via doAfterTextChanged
+            binding.etSearch.visibility = View.GONE
+            binding.tvTripId.visibility = View.VISIBLE
+            imm.hideSoftInputFromWindow(binding.etSearch.windowToken, 0)
+            clearBarcodeEdittext()                  // give focus back to the scanner field
+        }
+    }
 }

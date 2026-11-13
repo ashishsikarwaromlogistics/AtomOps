@@ -26,6 +26,7 @@ import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.SimpleItemAnimator
+import com.example.atomops.AppProgressDialog
 import com.example.atomops.AtomOpsApp
 import com.example.atomops.Constants
 import com.example.atomops.R
@@ -43,6 +44,7 @@ import com.example.atomops.models.DocketBox
 import com.example.atomops.models.bulkids.BulkIdGenMod
 import com.example.atomops.models.bulkids.Item
 import com.example.atomops.models.closem.CloseMod
+import com.example.atomops.models.completeunload.CompleteUnloadmod
 import com.example.atomops.models.findbox.FIndBoxMod
 import com.example.atomops.models.loadphoto.LoadImageMod
 import com.example.atomops.models.loadtrip.LoadTripMod
@@ -82,6 +84,17 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
     var manifestList: List<String> = mutableListOf()
     var selectedPosition=0
     lateinit var pd: ProgressDialog
+    val appprogress: AppProgressDialog by lazy { AppProgressDialog(this) }
+    private fun ShowDailog(){
+        if(!appprogress.isShowing){
+            appprogress.show()
+        }
+    }
+    private fun DismissDialog(){
+        if(appprogress.isShowing){
+            appprogress.dismiss()
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -104,6 +117,10 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
         binding.rvDockets.setHasFixedSize(false)
         binding.rvDockets.layoutManager = LinearLayoutManager(this)
         (binding.rvDockets.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
+
+        /*finish()
+        startActivity(Intent(this@UnloadingAct, LoadingUnloading::class.java))
+*/
 
 
         /* lifecycleScope.launch {
@@ -157,6 +174,8 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
         // adapter.setFilter(DocketFilter.PENDING)   // ALL / PENDING / COMPLETE
 
         binding.save.setOnClickListener {
+           // LaodingImage()
+         //   closeUnloading()
             Generateevenidbulk()
         }
 
@@ -512,7 +531,7 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                                                     clientRef = Utils.GenrateUUID(),
                                                     boxloaded = false
                                                 )
-                                                if(!j.voided && j.status.equals("PICKED"))
+                                                if(!j.voided && j.status.equals("IN_TRANSIT"))
                                                     barcodedao.insert(barcodedata)
                                             }
 
@@ -578,8 +597,8 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                 if(resp.code()==200){
                     if(resp.body()!!.status.equals("SUCCESS")){
                         barcodedao.updateLoadstatus(currentManifest)
-                        LoadingClose()
-                        //LaodingImage()
+                        //LoadingClose()
+                        LaodingImage()
                         Utils.showDialog(this@UnloadingAct,"SUCCESS",resp.body()!!.message.toString(),R.drawable.green_check)
                     }
                     else   Utils.showDialog(this@UnloadingAct,"Fail",resp.body()!!.message.toString(),R.drawable.green_check)
@@ -603,20 +622,35 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                     val mod= LoadImageMod(
                         actor = AtomOpsApp.getPreferences(Constants.EMP_ID, ""),
                         branchCode = AtomOpsApp.getPreferences(Constants.BCODE, ""),
-                        captureStage = "LOAD_100_PERCENT",
+                        captureStage = "UNLOAD_100_PERCENT",
                         geoLat  =56.43324,
                         geoLong=56.43324,
-                        photoUrl=path
+                        photoDocumentId=path
                     )
-                    val response=  ApiClient.getRetrofitclient().create(ServiceInterface::class.java).loadingPhoto(
-                        "Bearer " + AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""),
-                        currentManifest,
-                        AtomOpsApp.getPreferences(Constants.COMP_CODE, ""),
+                    ShowDailog()
+                    try{
+                        val response=  ApiClient.getRetrofitclient().create(ServiceInterface::class.java).loadingPhoto(
+                            "Bearer " + AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""),
+                            currentManifest,
+                            AtomOpsApp.getPreferences(Constants.COMP_CODE, ""),
 
-                        mod
-                    )
-                    if(response.code()==200 || response.code()==201){
-                        LoadingClose()
+                            mod
+                        )
+                        if(response.code()==200 || response.code()==201){
+                            DismissDialog()
+                            Utils.showDialog(this@UnloadingAct,"Alert","Do you want to close Loading?",R.drawable.green_check,{
+                                LoadingClose()
+                            })
+                        }
+                        else{
+                            DismissDialog()
+                            Utils.geterrormessagewithcode(this@UnloadingAct,response.code(),"")
+                        }
+                    }
+                    catch (e: Exception){
+                        DismissDialog()
+                        Utils.gettrycatcherror(this@UnloadingAct,e)
+
                     }
                 }
                 Log.d("Upload", "Done, file at: $path")
@@ -638,7 +672,7 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                     sealNumber,
                     "PHYSICAL")
                 val resp= ApiClient.getRetrofitclient().create(ServiceInterface::class.java).loadingseal(
-                    AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),tripId,mod)
+                    "Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),tripId,mod)
                 if(resp.code()==200 || resp.code()==201){
                     Utils.showDialog(this@UnloadingAct,"Success",resp.body()!!.message.toString(),R.drawable.green_check)
                     deleteDatafronted()
@@ -652,6 +686,7 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
     fun LoadingClose() {
         lifecycleScope.launch {
             try {
+
                 val isAllBoxLoaded = barcodedao.areAllBoxesLoaded(tripId)
 
                 if (!isAllBoxLoaded) {
@@ -663,7 +698,7 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                     )
                     return@launch
                 }
-
+                ShowDailog()
                 val mod = CloseMod(
                     AtomOpsApp.getPreferences(Constants.EMP_ID, ""),
                     AtomOpsApp.getPreferences(Constants.BCODE, "")
@@ -672,12 +707,13 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                 val resp = ApiClient.getRetrofitclient()
                     .create(ServiceInterface::class.java)
                     .UnLoadingClose(
-                        AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""),
+                        "Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""),
                         currentManifest,
                         mod
                     )
 
                 if (resp.code() == 200) {
+                    DismissDialog()
                     if (selectedPosition < manifestList.size - 1) {
                         selectedPosition++
                         selectTab(selectedPosition)
@@ -686,8 +722,11 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                         Utils.showDialog(
                             this@UnloadingAct,
                             "Success",
-                            resp.body()?.message.toString() ?: "Manifest closed",
-                            R.drawable.green_check
+                            resp.body()?.message.toString() ?: "Manifiest closed"+"\nPlease Complete Unloading ",
+                            R.drawable.green_check,{
+                                if(Utils.haveInternet(this@UnloadingAct))closeUnloading()
+
+                            }
                         )
                      //   addseal()
                     }
@@ -698,7 +737,8 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                         resp.body()?.message.toString() ?: "Manifest closed",
                         R.drawable.green_check
                     )
-                } else {
+                }
+                else {
                     // Error payload lives in errorBody(), not body()
                     val errorMsg = try {
                         val json = JSONObject(resp.errorBody()?.string() ?: "")
@@ -715,15 +755,52 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                     )
                 }
             } catch (e: Exception) {
+                DismissDialog()
                 Utils.gettrycatcherror(this@UnloadingAct, e)
             }
         }
     }
 
+    fun closeUnloading(){
+        ShowDailog()
+        val mod= CompleteUnloadmod(AtomOpsApp.getPreferences(Constants.EMP_ID,""),AtomOpsApp.getPreferences(Constants.BCODE,""))
+      lifecycleScope.launch {
+       try {
+           DismissDialog()
+           val response=  ApiClient.getRetrofitclient().create(ServiceInterface::class.java).CompleteUnload(
+               token = "Bearer "+ AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),
+               tripNo = tripId,
+               body = mod
+           )
+           if(response.code()==200){
+               Utils.showDialog(
+                   this@UnloadingAct,
+                   "Success",
+                   response.body()?.message.toString() ?:    "Unload completed",
+                   R.drawable.green_check,{
+                       finish()
+                       startActivity(Intent(this@UnloadingAct, LoadingUnloading::class.java))
+                   }
+               )
+           }
+           else {
+               Utils.geterrormessagewithcode(this@UnloadingAct,response.code(),"")
+           }
+       }
+       catch (e: Exception){
+           DismissDialog()
+           Utils.gettrycatcherror(this@UnloadingAct,e)
+       }
+      }
+
+
+
+
+    }
 
 
     fun addseal(){
-        AddSealBottomSheet { sealNumber, photoUri ->
+        AddSealBottomSheet { sealNumber ->
             // call your Gate Out API here
             captureAndUpload { path, success ->
                 if (success && path != null) {

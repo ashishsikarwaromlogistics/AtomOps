@@ -10,6 +10,7 @@ import androidx.core.view.updatePadding
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.atomops.AppProgressDialog
 import com.example.atomops.R
 import com.example.atomops.adapters.DockAdapter
 import com.example.atomops.adapters.DockStatAdapter
@@ -23,7 +24,17 @@ import com.example.atomops.models.dummy.SlotStatus
 class DockMgmtAct : AppCompatActivity() {
 
     private lateinit var binding: ActivityDockMgmtBinding
-
+    val appprogress: AppProgressDialog by lazy { AppProgressDialog(this) }
+    private fun ShowDailog(){
+        if(!appprogress.isShowing){
+            appprogress.show()
+        }
+    }
+    private fun DismissDialog(){
+        if(appprogress.isShowing){
+            appprogress.dismiss()
+        }
+    }
     private val statAdapter = DockStatAdapter()
     private val dockAdapter = DockAdapter(
         onSlotClick = { _, _ -> /* open slot details */ },

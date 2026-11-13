@@ -2,6 +2,8 @@ package com.example.atomops.activities
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -12,6 +14,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.atomops.AppProgressDialog
 import com.example.atomops.AtomOpsApp
 import com.example.atomops.Constants
 import com.example.atomops.CustomProgress2
@@ -32,16 +35,29 @@ class LoadingUnloading : AppCompatActivity() {
 
     private val allTrips = mutableListOf<Item>()
     private var selectedTab = "All Trips"
-    private var selectedStatus = "CREATED"
+    private var selectedStatus = ""
     private var query = ""
     private var currentstatus="ALL"
+    val appprogress: AppProgressDialog by lazy { AppProgressDialog(this) }
+    private fun ShowDailog(){
+        if(!appprogress.isShowing){
+            appprogress.show()
+        }
+    }
+    private fun DismissDialog(){
+        if(appprogress.isShowing){
+            appprogress.dismiss()
+        }
+    }
 
     // Tab title -> status value sent to the API (adjust to what your backend expects)
     private val tabStatusMap = linkedMapOf(
-        "All Trips" to "CREATED",
+        "All Trips" to "",
         "Loading" to "CREATED",
         "Unloading" to "GATE_IN",
+        "PLANNED" to "PLANNED",
         "Completed" to "COMPLETED"
+
     )
 
     // Created once, reused everywhere
@@ -61,7 +77,7 @@ class LoadingUnloading : AppCompatActivity() {
         setupToolbar()
         setupTabs()
         setupList()
-
+       binding.ivBack.setOnClickListener { finish() }
         // Initial load (first tab). The tab listener is added after the first tab
         // is selected, so it does not fire a duplicate call.
         loadIfOnline(selectedStatus)
@@ -81,6 +97,22 @@ class LoadingUnloading : AppCompatActivity() {
                 )
             }
         }
+
+
+        binding.etSearch.addTextChangedListener(object : TextWatcher {
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+
+            override fun afterTextChanged(s: Editable?) {
+                if (s.isNullOrEmpty()) {
+                    loadIfOnline(selectedStatus)
+                }
+            }
+        })
+
+
     }
 
     private fun setupToolbar() {
@@ -123,6 +155,25 @@ class LoadingUnloading : AppCompatActivity() {
     private fun setupList() {
         adapter = TripAdapter(
             onItemClick = { trip ->
+                if(trip.status.equals("CANCELLED")){
+                    Utils.showDialog(this@LoadingUnloading,"error","This is Cancelled Trip",R.drawable.ic_baseline_error_24)
+                }
+               else if(trip.status.equals("COMPLETED")){
+                    Utils.showDialog(this@LoadingUnloading,"error","Already Completed Trip",R.drawable.ic_baseline_error_24)
+
+                }
+               else if(trip.status.equals("PLANNED")){
+                    startActivity(
+                        Intent(this, TripsDetails::class.java).putExtra("currentstatus","PLANNED").putExtra("tripid", trip.tripNo)
+                    )
+                  }
+
+                else if(trip.status.equals("GATE_IN")){
+                    startActivity(
+                        Intent(this, TripsDetails::class.java).putExtra("currentstatus","GATE_IN").putExtra("tripid", trip.tripNo)
+                    )
+                }
+               else
                 startActivity(
                     Intent(this, TripsDetails::class.java).putExtra("currentstatus",currentstatus).putExtra("tripid", trip.tripNo)
                 )
@@ -180,9 +231,16 @@ class LoadingUnloading : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val resp = api.getTrips(
+                val resp =if(status.equals("")) api.getAllTrips(
                     "Bearer " + AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""),
-                    400021,
+                    AtomOpsApp.getPreferences(Constants.COMP_CODE, "").toInt(),
+                    AtomOpsApp.getPreferences(Constants.BCODE, "").toInt(),
+                    1,
+                    20
+                )
+                else api.getTrips(
+                    "Bearer " + AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""),
+                    AtomOpsApp.getPreferences(Constants.COMP_CODE, "").toInt(),
                     status,
                     AtomOpsApp.getPreferences(Constants.BCODE, "").toInt(),
                     1,
@@ -212,15 +270,25 @@ class LoadingUnloading : AppCompatActivity() {
         cp.show()
         lifecycleScope.launch {
             try {
-                val resp = api.filtertrips(
+                val resp =
+                    if(selectedStatus.equals(""))
+                    api.Allfiltertrips(
                     "Bearer " + AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""),
-                    400021,
-                    selectedStatus,
+                    AtomOpsApp.getPreferences(Constants.COMP_CODE, "").toInt(),
                     AtomOpsApp.getPreferences(Constants.BCODE, "").toInt(),
                     1,
                     20,
                     q
                 )
+                else api.filtertrips(
+                        "Bearer " + AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""),
+                        AtomOpsApp.getPreferences(Constants.COMP_CODE, "").toInt(),
+                        selectedStatus,
+                        AtomOpsApp.getPreferences(Constants.BCODE, "").toInt(),
+                        1,
+                        20,
+                        q
+                    )
                 cp.dismiss()
                 if (resp.isSuccessful && resp.body()?.status == "SUCCESS") {
                     allTrips.clear()

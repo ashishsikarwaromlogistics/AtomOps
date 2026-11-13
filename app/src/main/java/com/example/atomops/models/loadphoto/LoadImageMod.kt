@@ -6,5 +6,5 @@ data class LoadImageMod(
     val captureStage: String,
     val geoLat: Double,
     val geoLong: Double,
-    val photoUrl: String
+    val photoDocumentId: String
 )

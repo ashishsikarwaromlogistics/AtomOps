@@ -54,7 +54,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.AtomOps"
+            android:theme="@style/MaterailSupport"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".activities.Splash"
@@ -83,6 +83,7 @@
         <activity
             android:name=".activities.LoadingUnloading"
             android:exported="false"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.AtomOps1"
             android:windowSoftInputMode="adjustResize" />
         <activity
@@ -148,6 +149,19 @@
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".activities.UnlodingBoxDetails"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".activities.DocumentScan"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".activities.LocalLoading"
+            android:exported="false"
+            android:theme="@style/Theme.AtomOps1"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".activities.LocalLoadBoxDetails"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
     </application>

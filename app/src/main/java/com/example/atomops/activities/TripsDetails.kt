@@ -8,9 +8,14 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.atomops.AppProgressDialog
 import com.example.atomops.AtomOpsApp
 import com.example.atomops.Constants
 import com.example.atomops.R
+import com.example.atomops.UtilsK
+import com.example.atomops.UtilsK.Companion.dialNumber
+import com.example.atomops.adapters.DriverAdapter
 import com.example.atomops.database.daos.BarcodeDao
 import com.example.atomops.database.daos.TripDetailsDao
 import com.example.atomops.database.daos.UserDao
@@ -31,6 +36,17 @@ class TripsDetails : AppCompatActivity() {
     lateinit var getbarcodedao: BarcodeDao //db.userDao()
     var tripId=""
     var currentstatus=""
+    val appprogress: AppProgressDialog by lazy { AppProgressDialog(this) }
+    private fun ShowDailog(){
+        if(!appprogress.isShowing){
+            appprogress.show()
+        }
+    }
+    private fun DismissDialog(){
+        if(appprogress.isShowing){
+            appprogress.dismiss()
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -40,6 +56,7 @@ class TripsDetails : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+        binding.ivBack.setOnClickListener { finish() }
         currentstatus=intent.getStringExtra("currentstatus").toString()
         userDao = (application as AtomOpsApp).database.userDao()
         getbarcodedao = (application as AtomOpsApp).database.getBarcodeDao()
@@ -55,70 +72,93 @@ class TripsDetails : AppCompatActivity() {
 
         getTripDetails(tripId)
         binding.btnStartLoading.setOnClickListener {
-            if(currentstatus.equals("UNLOADING")){
-                startActivity(Intent(this, UnloadingAct::class.java).putExtra("tripid",intent.getStringExtra("tripid")))
-
+            if(currentstatus.equals("GATE_IN")){//UNLOADING
+                startActivity(Intent(this, UnloadingAct::class.java).putExtra("currentstatus",currentstatus).putExtra("tripid",intent.getStringExtra("tripid")))
+            } else if(currentstatus.equals("PLANNED")){
+                startActivity(Intent(this, DocumentScan::class.java).putExtra("currentstatus",currentstatus).putExtra("tripid",intent.getStringExtra("tripid")))
             }
             else
-            startActivity(Intent(this,LoadingAct::class.java).putExtra("tripid",intent.getStringExtra("tripid")))
+            startActivity(Intent(this,LoadingAct::class.java).putExtra("currentstatus",currentstatus).putExtra("tripid",intent.getStringExtra("tripid")))
         }
     }
     fun getTripDetails(tripid:String){
         lifecycleScope.launch {
-            val resp=ApiClient.getRetrofitclient().create(ServiceInterface::class.java).getTripDetails("Bearer "+ AtomOpsApp.getPreferences(
-                Constants.JWTTOKEN,""),tripid)
-            if(resp?.isSuccessful==true){
-                val data=resp.body()?.data
-                binding.tvService.setText(data?.trip?.routeType)
-                binding.tvDock.text = data?.trip?.currentDockNo ?: "--"
-                binding.tvVehicleNo.setText(data?.trip?.vehicleNo)
-                binding.tvTripDate.text=data?.trip?.createdAt?.substring(0,11)
-                lifecycleScope.launch {
-                    for (i in data!!.manifests) {
-                        for (j in i.dockets) {
-                            val exists = tripDetailsDao.existsDocket(j.docketNo)
-                            if (!exists) {
-                                tripDetailsDao.insert(
-                                    TripDetailsTable(
-                                        manifestNo = i.manifestNo,
-                                        legSequence = i.legSequence,
-                                        sourceBranch = i.sourceBranch,
-                                        destinationBranch = i.destinationBranch,
-                                        cnCount = i.cnCount,
-                                        boxCountTotal = i.legSequence, // Verify this field
-                                        status = i.status,
-                                        boxesScanned = i.boxesScanned,
-                                        boxesUnloaded = i.boxesUnloaded,
-                                        tripId = tripid,
-                                        docketNo = j.docketNo,
-                                        boxes = j.boxes,
-                                        weightKg = j.weightKg.toDouble(),
-                                        serviceMode = j.serviceMode,
-                                        agingHours = j.agingHours,
-                                        documentStatus = j.documentStatus,
-                                        missingMarkedAt = j.missingMarkedAt,
-                                        missingMarkedBy = j.missingMarkedBy,
-                                        fragile = j.fragile,
-                                        weightCheckRequired = j.weightCheckRequired,
-                                        liquidOil = j.liquidOil
-                                    )
-                                )
-                            }
-                        }
-                    }
+            ShowDailog()
+           try {
+               val resp=ApiClient.getRetrofitclient().create(ServiceInterface::class.java).getTripDetails("Bearer "+ AtomOpsApp.getPreferences(
+                   Constants.JWTTOKEN,""),tripid)
+               if(resp.code()==200 )
+               {
+                   DismissDialog()
 
-                    val docketlist = tripDetailsDao.getByTrip(tripId)
-                    for(k in docketlist){
-                        for (i in 1..k.boxes.toInt()) {
-                            val boxNo = k.docketNo + Utils.formatNumber(i).toString()
+                   val data=resp.body()?.data
+                   binding.tvService.setText(data?.trip?.routeType)
+                   binding.tvDock.text = data?.trip?.currentDockNo ?: "--"
+                   binding.tvVehicleNo.setText(data?.trip?.vehicleNo)
+                   binding.tvTripDate.text=data?.trip?.createdAt?.substring(0,11)
+                   for (i in data!!.manifests) {
+                       for (j in i.dockets) {
+                           val exists = tripDetailsDao.existsDocket(j.docketNo)
+                           if (!exists) {
+                               tripDetailsDao.insert(
+                                   TripDetailsTable(
+                                       manifestNo = i.manifestNo,
+                                       legSequence = i.legSequence,
+                                       sourceBranch = i.sourceBranch,
+                                       destinationBranch = i.destinationBranch,
+                                       cnCount = i.cnCount,
+                                       boxCountTotal = i.legSequence, // Verify this field
+                                       status = i.status,
+                                       boxesScanned = i.boxesScanned,
+                                       boxesUnloaded = i.boxesUnloaded,
+                                       tripId = tripid,
+                                       docketNo = j.docketNo,
+                                       boxes = j.boxes,
+                                       weightKg = j.weightKg.toDouble(),
+                                       serviceMode = j.serviceMode,
+                                       agingHours = j.agingHours,
+                                       documentStatus = j.documentStatus,
+                                       missingMarkedAt = j.missingMarkedAt,
+                                       missingMarkedBy = j.missingMarkedBy, fragile = j.fragile,
+                                       weightCheckRequired = j.weightCheckRequired,
+                                       liquidOil = j.liquidOil
+                                   )
+                               )
+                           }
+                       }
+                   }
 
-                              }
-                    }
-                }
+                   val docketlist = tripDetailsDao.getByTrip(tripId)
+                   for(k in docketlist){
+                       for (i in 1..k.boxes.toInt()) {
+                           val boxNo = k.docketNo + Utils.formatNumber(i).toString()
+
+                       }
+                   }
+
+                   binding.rvDrivers.layoutManager = LinearLayoutManager(this@TripsDetails)
+                   val drivers = resp.body()?.data?.drivers.orEmpty()
+                   binding.rvDrivers.adapter = DriverAdapter(drivers) { driver ->
+                       driver.driverMobile?.let { dialNumber(this@TripsDetails,it) }
+                   }
+
+                   binding.tvOriginCode.setText(data.route.sourceBranch)
+                   binding.tvIntermediateCode.setText(data.route.touchPointCodes.toString())
+                   binding.tvDestinationCode.setText(data.route.destinationBranch)
 
 
-               // binding.tvDriverName.setText(data?.trip?.d)
-            }
+
+
+                   // binding.tvDriverName.setText(data?.trip?.d)
+               }
+               else {
+                   Utils.geterrormessagewithcode(this@TripsDetails,resp.code(),"")
+                   DismissDialog()
+               }
+           }catch (e: Exception){
+               Utils.gettrycatcherror(this@TripsDetails,e)
+               DismissDialog()
+           }
         }
     }
 

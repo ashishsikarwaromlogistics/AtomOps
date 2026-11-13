@@ -13,6 +13,7 @@ import androidx.core.view.updatePadding
 import androidx.core.widget.TextViewCompat
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.atomops.AppProgressDialog
 import com.example.atomops.R
 import com.example.atomops.adapters.GateTripAdapter
 import com.example.atomops.databinding.ActivityGateOperationBinding
@@ -34,7 +35,17 @@ class GateOperationAct : AppCompatActivity() {
     private var allTrips: List<GateTrip> = emptyList()
     private var mode = GateMode.GATE_IN
     private var showDone = false          // false = Upcoming, true = Checked-In/Out
-
+    val appprogress: AppProgressDialog by lazy { AppProgressDialog(this) }
+    private fun ShowDailog(){
+        if(!appprogress.isShowing){
+            appprogress.show()
+        }
+    }
+    private fun DismissDialog(){
+        if(appprogress.isShowing){
+            appprogress.dismiss()
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

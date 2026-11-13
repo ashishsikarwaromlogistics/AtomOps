@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.databinding.DataBindingUtil
+import com.example.atomops.AppProgressDialog
 import com.example.atomops.AtomOpsApp
 import com.example.atomops.Constants
 import com.example.atomops.R
@@ -15,6 +16,17 @@ import com.example.atomops.dialogs.DockYardBottomSheet
 
 class Dashboard : AppCompatActivity() {
      lateinit var binding: ActivityDashboardBinding
+    val appprogress: AppProgressDialog by lazy { AppProgressDialog(this) }
+    private fun ShowDailog(){
+        if(!appprogress.isShowing){
+            appprogress.show()
+        }
+    }
+    private fun DismissDialog(){
+        if(appprogress.isShowing){
+            appprogress.dismiss()
+        }
+    }
      override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -24,7 +36,7 @@ class Dashboard : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-         AtomOpsApp.savePreferences(Constants.BCODE,"1003")
+     //    AtomOpsApp.savePreferences(Constants.BCODE,"2115")
 
          setText()
          setclick()
@@ -37,7 +49,8 @@ class Dashboard : AppCompatActivity() {
 
     private fun setclick() {
         binding.crdmidmile.setOnClickListener {
-            startActivity(Intent(this,MiddleMileAct::class.java))
+            startActivity(Intent(this,DocumentScan::class.java))
+            //startActivity(Intent(this,MiddleMileAct::class.java))
         }
         binding.crdlocal.setOnClickListener {
             startActivity(Intent(this, LocalTripAct::class.java))
