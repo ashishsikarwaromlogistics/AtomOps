@@ -23,7 +23,7 @@ data class ScanBox(
     val isScanned: Boolean
 )
 
-class ScanAdapter(private val allItems: List<DocketBox>) : RecyclerView.Adapter<ScanAdapter.ScanViewHolder>() {
+class ScanAdapter(private val allItems: List<DocketBox>,private val onItemClick:(DocketBox)-> Unit) : RecyclerView.Adapter<ScanAdapter.ScanViewHolder>() {
 
     private val expandedPositions = mutableSetOf<String>()
 
@@ -51,8 +51,10 @@ class ScanAdapter(private val allItems: List<DocketBox>) : RecyclerView.Adapter<
         val binding = holder.binding
 
         binding.tvDocketNo.text = item.docketNo
-       binding.tvDocketProgress.setText(item.boxesScanned.toString()+"/"+item.boxCountTotal.toString())
-
+       //binding.tvDocketProgress.setText(item.boxesScanned.toString()+"/"+item.boxCountTotal.toString())
+       /* val totalByDocket = rows.groupingBy { it.docketno }.eachCount()
+        val scannedByDocket = rows.filter { it.isScan }.groupBy({ it.docketno }, { it.box })*/
+        binding.tvDocketProgress.text = "${item.scanboxelist.size}/${item.boxes}"
 
        // binding.tvDocketProgress.text = "$scannedCount/$totalCount"
 
@@ -75,19 +77,19 @@ class ScanAdapter(private val allItems: List<DocketBox>) : RecyclerView.Adapter<
 
 
         binding.headerRow.setOnClickListener {
-            /*if (isExpanded) {
+           /* if (isExpanded) {
                 expandedPositions.remove(item.docketNo)
             } else {
                 expandedPositions.add(item.docketNo)
             }*/
 
           //  notifyItemChanged(holder.adapterPosition)
-            val context = holder.itemView.context
+            /*val context = holder.itemView.context
 
             val intent = Intent(context, BoxDetailsAct::class.java)
             intent.putExtra("docketno", item.docketNo)
-            context.startActivity(intent)
-
+            context.startActivity(intent)*/
+            onItemClick(item)
 
         }
     }

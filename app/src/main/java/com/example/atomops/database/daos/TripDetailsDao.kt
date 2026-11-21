@@ -39,11 +39,25 @@ interface TripDetailsDao {
     @Query("""
     SELECT manifestNo
     FROM TripDetailsTable
-    WHERE trip_id = :tripId
-    GROUP BY manifestNo
+    WHERE trip_id = :tripId and sourceBranch=:sourceBranch
+    GROUP BY manifestNo 
+    ORDER BY MIN(loadingOrder) IS NULL, MIN(loadingOrder) ASC
 """)
     suspend fun getByTripandmanifiest(
-        tripId: String
+        tripId: String,
+        sourceBranch: String
+    ): List<String>
+
+
+    @Query("""
+    SELECT manifestNo
+    FROM TripDetailsTable
+    WHERE trip_id = :tripId and destinationBranch=:bcode
+    GROUP BY manifestNo
+""")
+    suspend fun getByTripandmanifiestforUnload(
+        tripId: String,
+        bcode: String
     ): List<String>
 
     @Query("SELECT * FROM TripDetailsTable WHERE trip_id = :tripId")
@@ -51,6 +65,9 @@ interface TripDetailsDao {
 
     @Query("SELECT * FROM TripDetailsTable WHERE manifestNo = :manifestNo")
     suspend fun getByManifest(manifestNo: String): List<TripDetailsTable>
+
+    @Query("SELECT destinationBranch FROM TripDetailsTable WHERE trip_id = :trip_id")
+    suspend fun getDestinationBranch(trip_id: String): List<String>
 
     @Query("SELECT * FROM TripDetailsTable WHERE docketNo = :docketNo LIMIT 1")
     suspend fun getByDocket(docketNo: String): TripDetailsTable?

@@ -74,7 +74,7 @@ public class Utils {
             return true;
         }
 
-         Toast.makeText(ctx,"No,Internet Connection",0).show();
+        Toast.makeText(ctx,"No,Internet Connection",Toast.LENGTH_SHORT).show();
         NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
         return activeNetwork != null && activeNetwork.isConnected() && cm.isActiveNetworkMetered();
 
@@ -141,7 +141,7 @@ public class Utils {
     }
 
     public static void showDialog(Context con, String title, String msg, int icon, Runnable onOkClick
-                                   ) {
+    ) {
         try {
             new android.app.AlertDialog.Builder(con)
                     .setTitle(title)
@@ -163,7 +163,7 @@ public class Utils {
 
 
     public static String getCurrentTimestamp()  {
-      //  2026-10-22T10:32:00+05:30
+        //  2026-10-22T10:32:00+05:30
         return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.getDefault()).format(new Date());
     }
 
@@ -271,6 +271,38 @@ public class Utils {
         return  UUID.randomUUID().toString();
     }
 
+    private static final int[] MAPPING = {6, 9, 5, 7, 0, 3, 1, 4, 2, 8};
+    private static final int[] REVERSE = new int[10];
+    static {
+        for (int i = 0; i < MAPPING.length; i++) REVERSE[MAPPING[i]] = i;
+    }
 
+    // encrypt: digit d -> MAPPING[d]
+    public static String transform(String input) {
+        if (input == null) return "";
+        StringBuilder sb = new StringBuilder(input.length());
+        for (char c : input.toCharArray()) {
+            if (c >= '0' && c <= '9') {
+                sb.append(MAPPING[c - '0']);
+            } else {
+                sb.append(c); // letters and symbols stay unchanged
+            }
+        }
+        return sb.toString();
+    }
+
+    // decrypt: MAPPING[d] -> d
+    public static String revertTransform(String input) {
+        if (input == null) return "";
+        StringBuilder sb = new StringBuilder(input.length());
+        for (char c : input.toCharArray()) {
+            if (c >= '0' && c <= '9') {
+                sb.append(REVERSE[c - '0']);
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
 
 }

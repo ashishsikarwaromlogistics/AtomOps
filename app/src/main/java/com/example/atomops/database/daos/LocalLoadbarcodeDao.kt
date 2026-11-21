@@ -101,6 +101,20 @@ interface LocalLoadbarcodeDao {
         eventId: String
     ): Int
 
+
+
+    @Query("""
+    UPDATE LocalLoadbarcode
+    SET  event_id = :eventId
+    WHERE barcodebox = :boxCode AND trip_id = :tripId
+""")
+    suspend fun updateeventid(
+        boxCode: String,
+        tripId: String,
+        eventId: String
+    ): Int
+
+
     @Query("""
     SELECT barcodebox FROM LocalLoadbarcode
     WHERE trip_id = :tripId

@@ -1,18 +1,9 @@
 package com.example.atomops.activities
 
-import android.Manifest
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Bundle
-import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.databinding.DataBindingUtil
@@ -22,18 +13,11 @@ import com.example.atomops.AppProgressDialog
 import com.example.atomops.AtomOpsApp
 import com.example.atomops.Constants
 import com.example.atomops.R
-import com.example.atomops.UtilsK
 import com.example.atomops.adapters.BoxAdapter
 import com.example.atomops.database.daos.BarcodeDao
 import com.example.atomops.databinding.ActivityBoxDetailsBinding
 import com.example.atomops.dialogs.BoxIssueBottomSheet
-import com.example.atomops.networking.ApiClient
-import com.example.atomops.networking.ServiceInterface
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.asRequestBody
-import java.io.File
 
 class BoxDetailsAct : AppCompatActivity() {
 
@@ -46,158 +30,21 @@ class BoxDetailsAct : AppCompatActivity() {
     private var currentFilter = Filter.ALL
     private lateinit var docketno: String
     private lateinit var barcodedao: BarcodeDao
-    private var photoFile: File? = null
-
 
     val appprogress: AppProgressDialog by lazy { AppProgressDialog(this) }
-    private fun ShowDailog(){
-        if(!appprogress.isShowing){
+
+    private fun ShowDailog() {
+        if (!appprogress.isShowing) {
             appprogress.show()
         }
     }
-    private fun DismissDialog(){
-        if(appprogress.isShowing){
+
+    private fun DismissDialog() {
+        if (appprogress.isShowing) {
             appprogress.dismiss()
         }
     }
-
-    private val cameraLauncher =
-        registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-            val file = photoFile
-            if (success && file != null && file.exists()) {
-               // ivPreview.visibility = View.VISIBLE
-                //ivPreview.setImageURI(Uri.fromFile(file))
-                uploadImage(file)
-            } else {
-                Toast.makeText(this, "Capture cancelled", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-    // Permission result
-    private val permissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) {
-                openCamera()
-            } else if (!shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
-                // "Don't ask again" selected
-                showSettingsDialog()
-            } else {
-                Toast.makeText(this, "Camera permission is required", Toast.LENGTH_LONG).show()
-            }
-        }
-    // 1) Check permission
-    private fun checkPermissionAndOpenCamera() {
-        val granted = ContextCompat.checkSelfPermission(
-            this, Manifest.permission.CAMERA
-        ) == PackageManager.PERMISSION_GRANTED
-
-        if (granted) openCamera()
-        else permissionLauncher.launch(Manifest.permission.CAMERA)
-    }
-
-    // 2) Create file + open camera
-    private fun openCamera() {
-        val dir = File(cacheDir, "images").apply { mkdirs() }
-        val file = File(dir, "IMG_${System.currentTimeMillis()}.jpg")
-        photoFile = file
-
-        val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
-        cameraLauncher.launch(uri)
-    }
-    /*private fun uploadImage(file: File) {
-        lifecycleScope.launch {
-            setLoading(true)
-            try {
-                val compressed = compressImage(file)   // <= 1 MB
-
-                val body = compressed.asRequestBody("image/jpeg".toMediaTypeOrNull())
-                val part = MultipartBody.Part.createFormData("file", compressed.name, body)
-
-                val response = RetrofitClient.api.uploadDocument(
-                    auth = "Bearer $token",
-                    templateCode = "PHOTOGRAPH",
-                    isLinked = true,
-                    documentName = "MyDoc",
-                    file = part
-                )
-
-                if (response.isSuccessful) {
-                    Toast.makeText(this@MainActivity, "Uploaded successfully", Toast.LENGTH_SHORT).show()
-                    file.delete()          // clean up original
-                    compressed.delete()    // clean up compressed
-                } else {
-                    Toast.makeText(this@MainActivity, "Error ${response.code()}", Toast.LENGTH_LONG).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, e.message ?: "Upload failed", Toast.LENGTH_LONG).show()
-            } finally {
-                setLoading(false)
-            }
-        }
-    }*/
-
-    // 3) API call
-    private fun uploadImage(file: File) {
-        lifecycleScope.launch {
-            setLoading(true)
-            try {
-                val compressed = UtilsK.compressImage(file)   // <= 1 MB
-
-                val body = compressed.asRequestBody("image/jpeg".toMediaTypeOrNull())
-                val part = MultipartBody.Part.createFormData("file", compressed.name, body)
-
-
-
-             //   val body = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
-               // val part = MultipartBody.Part.createFormData("file", file.name, body)
-
-                val response = ApiClient.getRetrofitclient().create(ServiceInterface::class.java).uploadDocument(
-                    auth = "Bearer "+ AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),
-                    templateCode = "PHOTOGRAPH",
-                    isLinked = true,
-                    documentName = "MyDoc",
-                    file = part
-                )
-
-                if (response.isSuccessful) {
-                    Toast.makeText(this@BoxDetailsAct, "Uploaded successfully", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this@BoxDetailsAct, "Error ${response.code()}", Toast.LENGTH_LONG).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this@BoxDetailsAct, e.message ?: "Upload failed", Toast.LENGTH_LONG).show()
-            } finally {
-                setLoading(false)
-            }
-        }
-    }
-
-    private fun setLoading(loading: Boolean) {
-      //  progressBar.visibility = if (loading) View.VISIBLE else View.GONE
-        //btnCamera.isEnabled = !loading
-    }
-
-    private fun showSettingsDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("Camera permission needed")
-            .setMessage("Please enable camera permission from app settings.")
-            .setPositiveButton("Open Settings") { _, _ ->
-                startActivity(
-                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                        data = Uri.fromParts("package", packageName, null)
-                    }
-                )
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        photoFile?.let { outState.putString("photo_path", it.absolutePath) }
-    }
-
+    var tripId=""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -207,10 +54,11 @@ class BoxDetailsAct : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-       // checkPermissionAndOpenCamera()
+
         barcodedao = (application as AtomOpsApp).database.getBarcodeDao()
         docketno = intent.getStringExtra("docketno") ?: ""
-
+        tripId = intent.getStringExtra("tripId") ?: ""
+        binding.tvTripId.text=tripId
         setupToolbar()
         setupRecycler()
         setupFilters()
@@ -246,7 +94,6 @@ class BoxDetailsAct : AppCompatActivity() {
             val dbBoxes = barcodedao.getAllBox(docketno)
 
             allBoxes.clear()
-            // If getAllBox() already returns List<BoxItem>, just use: allBoxes.addAll(dbBoxes)
             allBoxes.addAll(dbBoxes.map { i ->
                 BoxItem(
                     docketno = i.docketno,
@@ -269,31 +116,32 @@ class BoxDetailsAct : AppCompatActivity() {
         }
     }
 
-    /** Scanned box -> Damage sheet, unscanned box -> Short sheet, already marked -> undo. */
+    /**
+     * Scanned box  -> open Damage sheet, or undo Damage if already marked.
+     * Unscanned box -> mark Short, or undo Short if already marked.
+     */
     private fun onActionClick(box: BoxItem) {
+        // Already damaged -> undo
+        if (box.damage == BoxStatus.DAMAGE) {
+            updateStatus(box.box, BoxStatus.NONE, "DAMAGE")
+            return
+        }
+
+        // Already short -> undo
+        if (box.isshort == BoxStatus.SHORT) {
+            updateStatus(box.box, BoxStatus.NONE, "SHORT")
+            return
+        }
+
+        // Scanned and no damage yet -> open the damage bottom sheet
         if (box.isScan) {
-           if(box.damage.equals("DAMAGE")){
-               updateStatus(box.box, BoxStatus.NONE,"DAMAGE")   // undo
-
-           }
-            else{
-               val type = BoxStatus.DAMAGE
-               BoxIssueBottomSheet.newInstance(box.box, type)
-                   .show(supportFragmentManager, BoxIssueBottomSheet.TAG)
-            }
-
+            BoxIssueBottomSheet.newInstance(box.box, BoxStatus.DAMAGE)
+                .show(supportFragmentManager, BoxIssueBottomSheet.TAG)
             return
         }
 
-        else if (box.isshort.equals("SHORT")) {
-            updateStatus(box.box, BoxStatus.NONE,"SHORT")   // undo
-            return
-        }
-        else{
-            updateStatus(box.box, BoxStatus.SHORT,"")
-        }
-
-
+        // Unscanned, not short, not damaged -> mark short
+        updateStatus(box.box, BoxStatus.SHORT, "")
     }
 
     /** Receives the result when the user taps Confirm in the bottom sheet. */
@@ -305,45 +153,65 @@ class BoxDetailsAct : AppCompatActivity() {
             val type = bundle.getString(BoxIssueBottomSheet.KEY_TYPE).orEmpty()
             val reason = bundle.getString(BoxIssueBottomSheet.KEY_REASON).orEmpty()
             val remark = bundle.getString(BoxIssueBottomSheet.KEY_REMARK).orEmpty()
+            val photoId = bundle.getString(BoxIssueBottomSheet.KEY_PHOTO_ID).orEmpty()
 
-            updateStatus(boxId, type,remark,reason)
-
-            // TODO: save reason + remark (and damage photo url) to your database, e.g.
-            // lifecycleScope.launch { barcodedao.updateStatus(docketno, boxId, type) }
+            updateStatus(boxId, type, remark, reason, photoId)
         }
     }
 
-    private fun updateStatus(boxId: String, newStatus: String,tagname:String) {
+    /**
+     * Toggle style update used by direct taps (Mark Short / Undo Short / Undo Damage).
+     * Updates the UI synchronously and persists in the background.
+     *
+     * @param tagname "DAMAGE" -> writes to damage column, anything else -> isshort column
+     */
+    private fun updateStatus(boxId: String, newStatus: String, tagname: String) {
         val index = allBoxes.indexOfFirst { it.box == boxId }
-        if (index != -1) {
-            lifecycleScope.launch {
+        if (index == -1) return
 
-                if(tagname.equals("")||tagname.equals("SHORT")){
-                barcodedao.updateShortStatus(boxId,newStatus)
-                    allBoxes[index] = allBoxes[index].copy(isshort = newStatus)}
-                else{
-                barcodedao.updateDamageStatus(boxId,newStatus)
-                    allBoxes[index] = allBoxes[index].copy(damage = newStatus)
-                }
-                refresh()
+        val isShortAction = tagname.isEmpty() || tagname == "SHORT"
+
+        // 1) Reflect immediately in the in-memory model + UI (main thread)
+        allBoxes[index] = if (isShortAction) {
+            allBoxes[index].copy(isshort = newStatus)
+        } else {
+            allBoxes[index].copy(damage = newStatus, damageurl = "")   // undo damage -> photo removed too
+        }
+        refresh()
+
+        // 2) Persist in the background; a failure doesn't block the UI
+        lifecycleScope.launch {
+            try {
+                if (isShortAction) barcodedao.updateShortStatus(boxId, newStatus,newStatus)
+                else barcodedao.updateDamageWithPhoto(boxId, newStatus, "","")
+            } catch (e: Exception) {
+                Toast.makeText(this@BoxDetailsAct, e.message ?: "Save failed", Toast.LENGTH_SHORT)
+                    .show()
             }
-
-
-
-
         }
     }
 
-    private fun updateStatus(boxId: String, newStatus: String, remark: String,reason:String) {
+    /**
+     * Damage confirmed from the bottom sheet with reason + remark + photo.
+     * Writes to the DAMAGE column and saves the uploaded photo id in damageurl.
+     */
+    private fun updateStatus(boxId: String, newStatus: String, remark: String, reason: String, photoId: String) {
         val index = allBoxes.indexOfFirst { it.box == boxId }
-        if (index != -1) {
-            lifecycleScope.launch {
-                barcodedao.updateDamageStatus(boxId,newStatus)
+        if (index == -1) return
+
+        // 1) Update the in-memory model + UI immediately
+        allBoxes[index] = allBoxes[index].copy(damage = newStatus, damageurl = photoId)
+        refresh()
+
+        // 2) Persist in the background
+        lifecycleScope.launch {
+            try {
+                barcodedao.updateDamageWithPhoto(boxId, newStatus, photoId,remark)
+                // reason / remark: add columns + DAO method if they must be saved too
+            } catch (e: Exception) {
+                Toast.makeText(this@BoxDetailsAct, e.message ?: "Save failed", Toast.LENGTH_SHORT)
+                    .show()
             }
-
-            allBoxes[index] = allBoxes[index].copy(status = newStatus)
-
-            refresh()
         }
     }
 
@@ -357,7 +225,7 @@ class BoxDetailsAct : AppCompatActivity() {
             Filter.ALL -> allBoxes
             Filter.SCANNED -> allBoxes.filter { it.isScan }
             Filter.UNSCANNED -> allBoxes.filter { !it.isScan }
-            Filter.SHORT -> allBoxes.filter { it.status == BoxStatus.SHORT }
+            Filter.SHORT -> allBoxes.filter { it.isshort == BoxStatus.SHORT }
         }
         adapter.submitList(filtered.toList())
     }
@@ -368,7 +236,7 @@ class BoxDetailsAct : AppCompatActivity() {
 
         binding.tvScannedCount.text = scanned.toString()
         binding.tvTotalCount.text = "/$total"
-        binding.progressLoading.max = total
+        binding.progressLoading.max = if (total == 0) 1 else total
         binding.progressLoading.progress = scanned
 
         binding.tvShortCount.text = allBoxes.count { it.isshort == BoxStatus.SHORT }.toString()

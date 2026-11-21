@@ -125,10 +125,12 @@
                             android:maxLines="1"/>
 
                     </com.google.android.material.textfield.TextInputLayout>
-                  <TextView
+
+                  <CheckBox
+                      android:id="@+id/tvrem"
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
-                      android:text="Forgot Password?"
+                      android:text="Remember Password?"
                       android:textColor="@color/colorPrimary"
                       android:layout_gravity="right"
                       android:textSize="@dimen/_10ssp"

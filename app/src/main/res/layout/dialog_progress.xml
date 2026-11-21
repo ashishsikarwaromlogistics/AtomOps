@@ -7,14 +7,14 @@
     android:elevation="12dp"
     android:gravity="center_horizontal"
     android:orientation="vertical"
-    android:paddingStart="24dp"
-    android:paddingTop="32dp"
-    android:paddingEnd="24dp"
-    android:paddingBottom="24dp">
+    android:paddingStart="@dimen/_16sdp"
+    android:paddingTop="@dimen/_24sdp"
+    android:paddingEnd="@dimen/_16sdp"
+    android:paddingBottom="@dimen/_16sdp">
 
     <FrameLayout
-        android:layout_width="72dp"
-        android:layout_height="72dp">
+        android:layout_width="@dimen/_70sdp"
+        android:layout_height="@dimen/_70sdp">
 
         <com.google.android.material.progressindicator.CircularProgressIndicator
             android:id="@+id/circularProgress"
@@ -22,10 +22,10 @@
             android:layout_height="match_parent"
             android:indeterminate="true"
             app:indicatorColor="@color/progress_accent"
-            app:indicatorSize="72dp"
+            app:indicatorSize="@dimen/_60sdp"
             app:trackColor="@color/progress_track"
-            app:trackCornerRadius="8dp"
-            app:trackThickness="6dp" />
+            app:trackCornerRadius="@dimen/_4sdp"
+            app:trackThickness="@dimen/_3sdp" />
 
         <TextView
             android:id="@+id/tvPercent"
@@ -34,7 +34,7 @@
             android:layout_gravity="center"
             android:text="0%"
             android:textColor="@color/progress_accent"
-            android:textSize="16sp"
+            android:textSize="@dimen/_11ssp"
             android:textStyle="bold"
             android:visibility="gone" />
     </FrameLayout>
@@ -46,7 +46,7 @@
         android:layout_marginTop="20dp"
         android:text="Loading"
         android:textColor="@color/progress_text_primary"
-        android:textSize="18sp"
+        android:textSize="@dimen/_14ssp"
         android:textStyle="bold" />
 
     <TextView
@@ -55,28 +55,28 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
         android:gravity="center"
-        android:lineSpacingExtra="2dp"
+        android:lineSpacingExtra="@dimen/_1sdp"
         android:text="Please wait..."
         android:textColor="@color/progress_text_secondary"
-        android:textSize="14sp" />
+        android:textSize="@dimen/_11ssp" />
 
     <com.google.android.material.progressindicator.LinearProgressIndicator
         android:id="@+id/linearProgress"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="@dimen/_12sdp"
         android:visibility="gone"
         app:indicatorColor="@color/progress_accent"
         app:trackColor="@color/progress_track"
-        app:trackCornerRadius="4dp"
-        app:trackThickness="6dp" />
+        app:trackCornerRadius="@dimen/_2sdp"
+        app:trackThickness="@dimen/_4sdp" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnCancel"
         style="@style/Widget.Material3.Button.TextButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="@dimen/_8sdp"
         android:text="Cancel"
         android:textColor="@color/progress_accent"
         android:visibility="gone" />

@@ -317,10 +317,10 @@ class UnlodingBoxDetails : AppCompatActivity() {
             lifecycleScope.launch {
 
                 if(tagname.equals("")||tagname.equals("SHORT")){
-                    barcodedao.updateShortStatus(boxId,newStatus)
+                    barcodedao.updateShortStatus(boxId,newStatus,newStatus)
                     allBoxes[index] = allBoxes[index].copy(isshort = newStatus)}
                 else{
-                    barcodedao.updateDamageStatus(boxId,newStatus)
+                    barcodedao.updateDamageStatus(boxId,newStatus,newStatus)
                     allBoxes[index] = allBoxes[index].copy(damage = newStatus)
                 }
                 refresh()
@@ -336,7 +336,7 @@ class UnlodingBoxDetails : AppCompatActivity() {
         val index = allBoxes.indexOfFirst { it.box == boxId }
         if (index != -1) {
             lifecycleScope.launch {
-                barcodedao.updateDamageStatus(boxId,newStatus)
+                barcodedao.updateDamageStatus(boxId,newStatus,remark)
             }
 
             allBoxes[index] = allBoxes[index].copy(status = newStatus)

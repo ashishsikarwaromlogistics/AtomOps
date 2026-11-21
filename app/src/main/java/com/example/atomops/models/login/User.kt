@@ -8,5 +8,10 @@ data class User(
     val lastName: String,
     val permissions: List<String>,
     val roles: List<String>,
-    val username: String
+
+    val username: String,
+    val userCategory: String,
+    val employeeCode: String,
+    val externalRefCode: String
 )
+

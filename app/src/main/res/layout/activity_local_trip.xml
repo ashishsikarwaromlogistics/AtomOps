@@ -47,6 +47,7 @@
                 android:id="@+id/ivSearch"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
+                android:visibility="gone"
                 android:src="@drawable/ic_search"
                 app:tint="@android:color/white" />
 
@@ -98,7 +99,8 @@
                         android:id="@+id/tvTotal"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="04"
+                        android:text="00"
+                            tools:text="04"
                         android:textColor="#1C2033"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -127,7 +129,8 @@
                         <TextView
                             android:id="@+id/tvLoading"
                             style="@style/SummaryValue"
-                            android:text="02" />
+                            android:text="00"
+                            tools:text="02" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -144,7 +147,8 @@
                         <TextView
                             android:id="@+id/tvUnloading"
                             style="@style/SummaryValue"
-                            android:text="01" />
+                            android:text="00"
+                            tools:text="01" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -161,7 +165,8 @@
                         <TextView
                             android:id="@+id/tvCompleted"
                             style="@style/SummaryValue"
-                            android:text="01" />
+                            android:text="00"
+                            tools:text="01" />
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>

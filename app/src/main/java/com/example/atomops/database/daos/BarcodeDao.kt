@@ -117,11 +117,11 @@ interface BarcodeDao {
     @Query("UPDATE BarcodeTable SET eventid = :eventid WHERE box = :box")
     suspend fun updateeventid(box: String, eventid: String): Int
 
-    @Query("UPDATE BarcodeTable SET isshort = :isshort WHERE box = :box ")
-    suspend fun updateShortStatus(box: String, isshort: String): Int
+    @Query("UPDATE BarcodeTable SET isshort = :isshort,shortreason=:shortreason WHERE box = :box ")
+    suspend fun updateShortStatus(box: String, isshort: String,shortreason:String): Int
 
-    @Query("UPDATE BarcodeTable SET damage = :damage WHERE box = :box ")
-    suspend fun updateDamageStatus(box: String, damage: String): Int
+    @Query("UPDATE BarcodeTable SET damage = :damage,damagereason=:damagereason WHERE box = :box ")
+    suspend fun updateDamageStatus(box: String, damage: String,damagereason: String): Int
 
     @Query("UPDATE BarcodeTable SET isshort = '' WHERE box = :box ")
     suspend fun removeshortShortStatus(box: String): Int
@@ -167,4 +167,49 @@ interface BarcodeDao {
     suspend fun insertIfNew(item: BarcodeTable): Long {
         return if (isScanned(item.box, item.tripId)) -1L else insert(item)
     }
+
+    @Query("UPDATE BarcodeTable SET damage = :damage, damageurl = :damageUrl ,damagereason=:damagereason WHERE box = :box")
+    suspend fun updateDamageWithPhoto(box: String, damage: String, damageUrl: String,damagereason:String): Int
+
+
+
+    // ---- counts per manifest ----
+    @Query("SELECT COUNT(*) FROM BarcodeTable WHERE manifest = :manifest AND TRIM(IFNULL(isshort, '')) != ''")
+    suspend fun getShortCount(manifest: String): Int
+
+    @Query("SELECT COUNT(*) FROM BarcodeTable WHERE manifest = :manifest AND TRIM(IFNULL(damage, '')) != ''")
+    suspend fun getDamageCount(manifest: String): Int
+
+    // ---- both counts in one query ----
+    @Query("""
+    SELECT
+        COUNT(CASE WHEN TRIM(IFNULL(isshort, '')) != '' THEN 1 END) AS shortCount,
+        COUNT(CASE WHEN TRIM(IFNULL(damage,  '')) != '' THEN 1 END) AS damageCount
+    FROM BarcodeTable
+    WHERE manifest = :manifest
+""")
+    suspend fun getShortDamageCount(manifest: String): ShortDamageCount
+
+    // ---- same for one docket (BoxDetailsAct) ----
+    @Query("""
+    SELECT
+        COUNT(CASE WHEN TRIM(IFNULL(isshort, '')) != '' THEN 1 END) AS shortCount,
+        COUNT(CASE WHEN TRIM(IFNULL(damage,  '')) != '' THEN 1 END) AS damageCount
+    FROM BarcodeTable
+    WHERE docketno = :docketNo
+""")
+    suspend fun getShortDamageCountByDocket(docketNo: String): ShortDamageCount
+
+    // ---- the box numbers themselves, if you need to list them ----
+    @Query("SELECT box FROM BarcodeTable WHERE manifest = :manifest AND TRIM(IFNULL(isshort, '')) != ''")
+    suspend fun getShortBoxCodes(manifest: String): List<String>
+
+    @Query("SELECT box FROM BarcodeTable WHERE manifest = :manifest AND TRIM(IFNULL(damage, '')) != ''")
+    suspend fun getDamageBoxCodes(manifest: String): List<String>
+
+    data class ShortDamageCount(
+        val shortCount: Int,
+        val damageCount: Int
+    )
+
 }

@@ -6,7 +6,8 @@ data class BulkLoadingRequest(
     @SerializedName("closeIfComplete") val closeIfComplete: Boolean,
     @SerializedName("actor") val actor: String,
     @SerializedName("items") val items: List<BulkItem>,
-    @SerializedName("exceptions") val exceptions: List<BulkException>
+    @SerializedName("exceptions") val exceptions: List<BulkException>? = null
+   // @SerializedName("exceptions") val exceptions: List<BulkException>
 )
 
 data class BulkItem(

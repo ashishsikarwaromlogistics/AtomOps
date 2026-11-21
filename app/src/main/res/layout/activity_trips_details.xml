@@ -31,7 +31,16 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:tint="@android:color/white" />
-
+<TextView
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:text="Trip Details"
+    android:textColor="@android:color/white"
+    android:textSize="18sp"
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintEnd_toStartOf="@id/ivSearch"
+    app:layout_constraintStart_toEndOf="@id/ivBack"
+    app:layout_constraintTop_toTopOf="parent" />
             <ImageView
                 android:id="@+id/ivSearch"
                 android:layout_width="40dp"
@@ -388,83 +397,7 @@
                             </LinearLayout>
                         </LinearLayout>
 
-                        <!-- ===== Counts ===== -->
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/_18sdp"
-                            android:orientation="horizontal">
 
-                            <LinearLayout
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:orientation="vertical">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="Docket Count"
-                                    android:textColor="#374151"
-                                    android:textSize="@dimen/_10ssp" />
-
-                                <TextView
-                                    android:id="@+id/tvDocketCount"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginTop="4dp"
-                                    android:text="10"
-                                    android:textColor="#111827"
-                                    android:textSize="@dimen/_10ssp" />
-                            </LinearLayout>
-
-                            <LinearLayout
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:orientation="vertical">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="Total Boxes"
-                                    android:textColor="#374151"
-                                    android:textSize="@dimen/_10ssp" />
-
-                                <TextView
-                                    android:id="@+id/tvTotalBoxes"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginTop="4dp"
-                                    android:text="70"
-                                    android:textColor="#111827"
-                                    android:textSize="@dimen/_10ssp" />
-                            </LinearLayout>
-
-                            <LinearLayout
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:gravity="end"
-                                android:orientation="vertical">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="Total Boxes"
-                                    android:textColor="#374151"
-                                    android:textSize="@dimen/_10ssp" />
-
-                                <TextView
-                                    android:id="@+id/tvTotalBoxes2"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginTop="4dp"
-                                    android:text="70"
-                                    android:textColor="#111827"
-                                    android:textSize="@dimen/_10ssp" />
-                            </LinearLayout>
-                        </LinearLayout>
 
                         <!-- ===== Driver ===== -->
 

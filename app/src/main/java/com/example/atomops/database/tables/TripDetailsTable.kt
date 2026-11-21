@@ -35,5 +35,6 @@ data class TripDetailsTable(
     val missingMarkedBy: String? = null,
     val fragile: Boolean = false,
     val weightCheckRequired: Boolean = false,
-    val liquidOil: Boolean = false
+    val liquidOil: Boolean = false,
+    val loadingOrder: Int ? = null
 )

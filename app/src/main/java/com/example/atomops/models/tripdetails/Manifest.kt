@@ -10,5 +10,6 @@ data class Manifest(
     val legSequence: Int,
     val manifestNo: String,
     val sourceBranch: String,
-    val status: String
+    val status: String,
+    val loadingOrder: Int
 )

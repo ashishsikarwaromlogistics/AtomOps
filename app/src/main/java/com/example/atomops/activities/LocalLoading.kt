@@ -30,6 +30,7 @@ import com.example.atomops.localclasses.SaveValidationResult
 import com.example.atomops.models.CloseLoadingRequest
 import com.example.atomops.models.bulkids.BulkIdGenMod
 import com.example.atomops.models.bulkids.Item
+import com.example.atomops.models.bulkids.Result
 import com.example.atomops.models.bulkload.BulkException
 import com.example.atomops.models.bulkload.BulkItem
 import com.example.atomops.models.bulkload.BulkLoadingRequest
@@ -110,7 +111,7 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
                     if (result.canSave) {
                         // ✅ every box is scanned or short
                         speak("All boxes scanned")
-                        saveLoading(result)          // TODO: call your save / submit API
+                        Generateevenidbulk()          // TODO: call your save / submit API
                     } else {
                         // ❌ pending boxes → speak + show remaining dockets
                         speak("${result.pendingBoxes} boxes remaining")
@@ -212,7 +213,7 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
                     tripNo = tripNo,
                     companyCode = AtomOpsApp.getPreferences(Constants.COMP_CODE, "")
                 )
-                if (res.code() == 200) {
+                if (res.isSuccessful) {
                     tripLoading = res.body()?.data
                     bindSummary()
                     docketAdapter.submitDockets(tripLoading?.dockets ?: emptyList())
@@ -220,7 +221,12 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
                     val docketNos = tripLoading?.dockets?.mapNotNull { it.docketNo } ?: emptyList()
                     if (docketNos.isNotEmpty()) loadDocketBoxes(docketNos)
                 } else {
-                    Utils.handleHttpError(this@LocalLoading, res.code())
+                    try{
+                        Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
+                    }catch (e:Exception){
+                        Utils.gettrycatcherror(this@LocalLoading,e)
+                    }
+                   // Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
                 }
             } catch (e: Exception) {
                 Utils.gettrycatcherror(this@LocalLoading, e)
@@ -239,7 +245,7 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
             request = request
         )
 
-        if (res.code() == 200) {
+        if (res.isSuccessful) {
             docketBoxes = res.body()?.data?.dockets ?: emptyList()
 
             // 1. Codes already stored in DB for this trip (for dedupe insert)
@@ -284,7 +290,12 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
                 .associate { it.docketNo!! to it.boxes.orEmpty().filter { b -> !b.voided } }
             docketAdapter.submitBoxes(map)
         } else {
-            Utils.handleHttpError(this@LocalLoading, res.code())
+            try{
+                Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
+            }catch (e:Exception){
+                Utils.gettrycatcherror(this@LocalLoading,e)
+            }
+           // Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
         }
     }
     /*private suspend fun loadDocketBoxes(docketNos: List<String>) {
@@ -336,7 +347,7 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
     override fun onItemClick(docket: TripDocket) {
         startActivity(
             Intent(
-                    this, LocalLoading::class.java).
+            this, LocalLoadBoxDetails::class.java).
                 putExtra("tripId",tripId)
                 .putExtra("docketNo",docket.docketNo)
                 )
@@ -459,19 +470,40 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
 
 
                 val mod= BulkIdGenMod(companyCode = AtomOpsApp.getPreferences(Constants.COMP_CODE,"").toInt(),items=items)
+                if(items.size==0){
+                    DismissDialog()
+                    submitBulk()
+                    return@launch
+                }
                 try {
                     val resp=  ApiClient.getRetrofitclient().create(ServiceInterface::class.java).bulkScan("Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),mod)
-                    if(resp.code()==200){
-                        DismissDialog()
-                        if(resp.body()!!.status.equals("SUCCESS")){
-                            submitBulk()
-                        }
-                    }
-                    else {
-                        DismissDialog()
-                        Utils.handleHttpError(this@LocalLoading,resp.code())
-                        // Utils.showDialog(this@LocalLoading,"error"+resp.code(), Utils.handleHttpError(this@LocalLoading,resp.code()),R.drawable.ic_baseline_error_24)
 
+                    DismissDialog()
+
+                    if (resp.isSuccessful) {
+                        val body = resp.body()
+                        if (body?.status == "SUCCESS") {
+                            var errors = ""
+                            for (r in body.data?.results.orEmpty()) {
+                                if (r.outcome == "APPLIED" || r.outcome == "APPLIED_IDEMPOTENT") {
+                                    // box accepted
+                                } else {
+                                    errors += r.boxCode + " " + r.outcome + " " + r.boxStatus.toString() + "\n"
+                                }
+                            }
+
+                            if (errors.isNotEmpty()) {
+                                Utils.showDialog(this@LocalLoading, "error", errors, R.drawable.ic_baseline_error_24)
+                            } else {
+                                submitBulk(body.data.results)
+                            }
+                        } else {
+                            val msg = body?.message?.toString()
+                                ?.takeIf { it.isNotBlank() && it != "null" } ?: "Something went wrong"
+                            Utils.showDialog(this@LocalLoading, "error", msg, R.drawable.ic_baseline_error_24)
+                        }
+                    } else {
+                        Utils.showDialog(this@LocalLoading, "error", resp.errorMessage(), R.drawable.ic_baseline_error_24)
                     }
                 }catch (e: Exception) {
                     DismissDialog()
@@ -484,10 +516,13 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
     }
 
 
-    private fun submitBulk() {
+    private fun submitBulk(result: List<Result>) {
         ShowDailog()
         lifecycleScope.launch {
             try {
+                for(i in result){
+                    dao.updateeventid(i.boxCode,tripId,i.publicEventId.toString())
+                }
                 val rows = dao.getByTrip(tripId)   // all LocalLoadbarcode rows for this trip
 
                 if (rows.isEmpty()) {
@@ -513,7 +548,7 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
                             BulkItem(
                                 docketNo     = docketNo,
                                 boxId        = boxId,
-                                publicScanId = row.scanId.orEmpty()
+                                publicScanId = row.eventId.orEmpty()
                             )
                         )
                     }
@@ -568,16 +603,119 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
                     )
                 )
 
-                if (res.code() == 200) {
+                if (res.isSuccessful) {
                     Toast.makeText(this@LocalLoading, "Saved successfully", Toast.LENGTH_SHORT).show()
                     if (allAccounted) confirmCloseLoading()
                 } else {
-                    val err = res.errorBody()?.string()
-                    if (!err.isNullOrBlank()) {
-                        Toast.makeText(this@LocalLoading, err, Toast.LENGTH_LONG).show()
-                    } else {
-                        Utils.handleHttpError(this@LocalLoading, res.code())
+                    try{
+                        Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
+                    }catch (e:Exception){
+                        Utils.gettrycatcherror(this@LocalLoading,e)
                     }
+                   // Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
+                }
+            } catch (e: Exception) {
+                Utils.gettrycatcherror(this@LocalLoading, e)
+            } finally {
+                DismissDialog()
+            }
+        }
+    }
+    private fun submitBulk() {
+        ShowDailog()
+        lifecycleScope.launch {
+            try {
+
+                val rows = dao.getByTrip(tripId)   // all LocalLoadbarcode rows for this trip
+
+                if (rows.isEmpty()) {
+                    Toast.makeText(this@LocalLoading, "Nothing to submit", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+
+                val items      = mutableListOf<BulkItem>()
+                val exceptions = mutableListOf<BulkException>()
+
+                for (row in rows) {
+                    val docketNo = row.docket.orEmpty()
+                    val boxId    = row.barcodebox.orEmpty()
+                    if (docketNo.isBlank() || boxId.isBlank()) continue
+
+                    val isScanned = row.scanStatus.equals("Scanned", true)
+                    val isDamage  = row.isDamage.equals("Damage", true)
+                    val isShort   = row.shortremarks.isNotBlank()
+
+                    // ✅ items[]  → every SCANNED box (damaged boxes are ALSO scanned)
+                    if (isScanned) {
+                        items.add(
+                            BulkItem(
+                                docketNo     = docketNo,
+                                boxId        = boxId,
+                                publicScanId = row.eventId.orEmpty()
+                            )
+                        )
+                    }
+
+                    // ✅ exceptions[]  → DAMAGED_BOX  (damaged boxes can also be in items)
+                    if (isDamage) {
+                        exceptions.add(
+                            BulkException(
+                                docketNo      = docketNo,
+                                boxId         = boxId,
+                                exceptionType = "DAMAGED_BOX",
+                                reason        = row.damageremarks.ifBlank { "damaged" },
+                                publicScanId  = row.scanId.orEmpty().ifBlank { null }
+                            )
+                        )
+                    }
+
+                    // ✅ exceptions[]  → BOX_MISSING  (short, not scanned)
+                    if (isShort && !isScanned) {
+                        exceptions.add(
+                            BulkException(
+                                docketNo      = docketNo,
+                                boxId         = boxId,
+                                exceptionType = "BOX_MISSING",
+                                reason        = row.shortremarks.ifBlank { "not at the dock" },
+                                publicScanId  = null
+                            )
+                        )
+                    }
+                }
+
+                if (items.isEmpty() && exceptions.isEmpty()) {
+                    Toast.makeText(this@LocalLoading, "Nothing to submit", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+
+                // ✅ "complete" only when EVERY box is scanned OR short
+                val allAccounted = rows.all {
+                    it.scanStatus.equals("Scanned", true) ||
+                            it.shortremarks.isNotBlank()
+                }
+
+                val res = serviceinterface.submitBulkLoading(
+                    auth        = "Bearer " + AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""),
+                    tripNo      = tripId,
+                    companyCode = AtomOpsApp.getPreferences(Constants.COMP_CODE, ""),
+                    request = BulkLoadingRequest(
+                        closeIfComplete = allAccounted,
+                        actor           = AtomOpsApp.getPreferences(Constants.EMP_ID, ""),
+                        items           = items,
+                        exceptions      = exceptions
+                    )
+                )
+
+                if (res.isSuccessful) {
+                    Toast.makeText(this@LocalLoading, "Saved successfully", Toast.LENGTH_SHORT).show()
+                    if (allAccounted) confirmCloseLoading()
+                } else {
+                    try{
+                        Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
+                    }catch (e:Exception){
+                        Utils.gettrycatcherror(this@LocalLoading,e)
+                    }
+                    // Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
                 }
             } catch (e: Exception) {
                 Utils.gettrycatcherror(this@LocalLoading, e)
@@ -610,18 +748,17 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
                     companyCode = AtomOpsApp.getPreferences(Constants.COMP_CODE, ""),
                     request = CloseLoadingRequest(actor = AtomOpsApp.getPreferences(Constants.EMP_ID, ""))
                 )
-                if (res.code() == 200) {
+                if (res.isSuccessful) {
                     Toast.makeText(this@LocalLoading, "Loading closed", Toast.LENGTH_SHORT).show()
                     setResult(RESULT_OK)
                     finish()
                 } else {
-                    // show server message if present (e.g. boxes still pending)
-                    val err = res.errorBody()?.string()
-                    if (!err.isNullOrBlank() && res.code() == 400) {
-                        Toast.makeText(this@LocalLoading, err, Toast.LENGTH_LONG).show()
-                    } else {
-                        Utils.handleHttpError(this@LocalLoading, res.code())
+                    try{
+                        Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
+                    }catch (e:Exception){
+                        Utils.gettrycatcherror(this@LocalLoading,e)
                     }
+                   // Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
                 }
             } catch (e: Exception) {
                 Utils.gettrycatcherror(this@LocalLoading, e)

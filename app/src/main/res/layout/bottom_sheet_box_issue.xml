@@ -1,52 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/curved_rect"
         android:orientation="vertical"
-        android:paddingStart="@dimen/_10sdp"
-        android:paddingTop="@dimen/_5sdp"
-        android:paddingEnd="@dimen/_10sdp"
-        android:paddingBottom="@dimen/_10sdp">
+        android:paddingStart="16dp"
+        android:paddingTop="20dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="16dp">
 
-        <!-- drag handle -->
-        <View
-            android:layout_width="40dp"
-            android:layout_height="4dp"
-            android:layout_gravity="center_horizontal"
-            android:background="@drawable/ic_outer_grey" />
-
+        <!-- Title -->
         <TextView
             android:id="@+id/tvTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
             android:text="Mark Box as Short"
-            android:textColor="@color/text_primary"
-            android:textSize="@dimen/_11ssp"
+            android:textColor="#1C2033"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
-        <!-- box info -->
+        <!-- Box info -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="16dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <ImageView
-                android:layout_width="@dimen/_25sdp"
-                android:layout_height="@dimen/_25sdp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:contentDescription="Box"
                 android:src="@drawable/ic_package" />
 
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
+                android:layout_marginStart="12dp"
                 android:layout_weight="1"
                 android:orientation="vertical">
 
@@ -55,35 +49,37 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="The box will be reported as damage"
-                    android:textColor="@color/text_primary"
-                    android:textSize="@dimen/_9ssp" />
+                    android:textColor="#1C2033"
+                    android:textSize="13sp" />
 
                 <TextView
                     android:id="@+id/tvBoxId"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Box Id: BOX-123456789IN"
-                    android:textColor="@color/text_primary"
-                    android:textSize="@dimen/_9ssp"
-                    android:textStyle="bold" />
+                    android:layout_marginTop="2dp"
+                    android:textColor="#1C2033"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    tools:text="Box Id: BOX-123456789IN" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- dashed divider (needs software layer to draw dashes) -->
+        <!-- Dashed divider (software layer is required for dashes) -->
         <View
             android:layout_width="match_parent"
             android:layout_height="2dp"
-            android:layout_marginTop="@dimen/_5sdp"
+            android:layout_marginTop="16dp"
             android:background="@color/grey"
             android:layerType="software" />
 
-        <!-- reasons: 2 columns, single selection handled in code -->
+        <!-- Reasons: 2 equal columns, single selection handled in code -->
         <GridLayout
+            android:id="@+id/gridReasons"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/_5sdp"
-            android:columnCount="2">
+            android:layout_marginTop="16dp"
+            android:columnCount="2"
+            android:useDefaultMargins="false">
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipCrushed"
@@ -91,9 +87,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_columnWeight="1"
-                android:layout_gravity="fill_horizontal"
-                android:layout_marginEnd="@dimen/_3sdp"
-                android:layout_marginBottom="@dimen/_4sdp"
+                android:layout_marginEnd="6dp"
+                android:layout_marginBottom="8dp"
                 android:text="Crushed / Dented" />
 
             <com.google.android.material.chip.Chip
@@ -102,9 +97,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_columnWeight="1"
-                android:layout_gravity="fill_horizontal"
-                android:layout_marginEnd="@dimen/_3sdp"
-                android:layout_marginBottom="@dimen/_4sdp"
+                android:layout_marginStart="6dp"
+                android:layout_marginBottom="8dp"
                 android:text="Torn Packaging" />
 
             <com.google.android.material.chip.Chip
@@ -113,9 +107,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_columnWeight="1"
-                android:layout_gravity="fill_horizontal"
-                android:layout_marginEnd="@dimen/_3sdp"
-                android:layout_marginBottom="@dimen/_4sdp"
+                android:layout_marginEnd="6dp"
+                android:layout_marginBottom="8dp"
                 android:text="Wet / Water Damage" />
 
             <com.google.android.material.chip.Chip
@@ -124,9 +117,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_columnWeight="1"
-                android:layout_gravity="fill_horizontal"
-                android:layout_marginEnd="@dimen/_3sdp"
-                android:layout_marginBottom="@dimen/_4sdp"
+                android:layout_marginStart="6dp"
+                android:layout_marginBottom="8dp"
                 android:text="Open Seal / Tampered" />
 
             <com.google.android.material.chip.Chip
@@ -135,8 +127,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_columnWeight="1"
-                android:layout_gravity="fill_horizontal"
-                android:layout_marginEnd="@dimen/_2sdp"
+                android:layout_marginEnd="6dp"
                 android:text="Punctured" />
 
             <com.google.android.material.chip.Chip
@@ -145,60 +136,122 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_columnWeight="1"
-                android:layout_gravity="fill_horizontal"
-                android:layout_marginStart="@dimen/_2sdp"
+                android:layout_marginStart="6dp"
                 android:text="Broken Seals" />
         </GridLayout>
 
+        <!-- Remark -->
         <EditText
             android:id="@+id/etRemark"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/_40sdp"
-            android:layout_marginTop="16dp"
+            android:layout_height="80dp"
+            android:layout_marginTop="12dp"
             android:background="@drawable/rect"
             android:gravity="top|start"
             android:hint="Additional Remark..."
             android:importantForAutofill="no"
             android:inputType="textMultiLine|textCapSentences"
             android:padding="12dp"
-            android:textColor="@color/text_primary"
-            android:textColorHint="@color/text_secondary"
+            android:textColor="#1C2033"
+            android:textColorHint="#8A8FA0"
             android:textSize="13sp" />
 
-        <!-- buttons -->
+        <!-- Damage photo (hide this whole section for "Short") -->
+        <LinearLayout
+            android:id="@+id/llPhotoSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Add damage photo"
+                android:textColor="#1C2033"
+                android:textSize="13sp" />
+
+            <LinearLayout
+                android:id="@+id/llPhoto"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/rect"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvPhoto"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:ellipsize="middle"
+                    android:gravity="center_vertical"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="8dp"
+                    android:text="@string/photo_required"
+                    android:textColor="#4A4F5C"
+                    android:textSize="13sp" />
+
+                <FrameLayout
+                    android:id="@+id/btnUploadPhoto"
+                    android:layout_width="44dp"
+                    android:layout_height="match_parent"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="Upload photo"
+                        android:src="@drawable/ic_cloud_upload" />
+                </FrameLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Buttons -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="28dp"
             android:orientation="horizontal">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnCancel"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
+                android:layout_height="52dp"
                 android:layout_marginEnd="8dp"
                 android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
                 android:text="Cancel"
                 android:textAllCaps="false"
-                android:textColor="@color/action_blue"
+                android:textColor="#0B3A6F"
+                android:textSize="14sp"
                 android:textStyle="bold"
-                app:cornerRadius="6dp"
-                app:strokeColor="@color/action_blue" />
+                app:cornerRadius="4dp"
+                app:strokeColor="#0B3A6F"
+                app:strokeWidth="1dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnConfirm"
-                style="@style/Widget.MaterialComponents.Button"
+                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_marginStart="@dimen/_4sdp"
+                android:layout_height="52dp"
+                android:layout_marginStart="8dp"
                 android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
                 android:text="Confirm"
                 android:textAllCaps="false"
                 android:textColor="@android:color/white"
+                android:textSize="14sp"
                 android:textStyle="bold"
-                app:backgroundTint="@color/action_blue"
-                app:cornerRadius="@dimen/_3sdp" />
+                app:backgroundTint="#0B3A6F"
+                app:cornerRadius="4dp" />
         </LinearLayout>
     </LinearLayout>
 </layout>

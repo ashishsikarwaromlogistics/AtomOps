@@ -150,6 +150,16 @@
             tools:listitem="@layout/item_trip"
             android:padding="12dp" />
 
+        <!-- shown while the next page is loading -->
+        <ProgressBar
+            android:id="@+id/pbLoadMore"
+            style="?android:attr/progressBarStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/tvEmpty"
             android:layout_width="match_parent"

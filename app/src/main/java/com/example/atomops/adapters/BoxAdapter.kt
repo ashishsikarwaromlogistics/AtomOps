@@ -26,8 +26,10 @@ class BoxAdapter(
             if (box.isScan) {
                 b.ivStatus.setImageResource(R.drawable.green_check)
                 b.ivStatus.imageTintList = null // keep green
-                b.tvScannedAt.visibility = View.VISIBLE
-                b.tvScannedAt.text = "Scanned at ${box.timeScan.orEmpty()}"
+                val time = box.timeScan.orEmpty()
+                // only show "Scanned at" when a time was actually saved
+                b.tvScannedAt.visibility = if (time.isNotBlank()) View.VISIBLE else View.GONE
+                b.tvScannedAt.text = "Scanned at $time"
             } else {
                 b.ivStatus.setImageResource(R.drawable.grey_box)
                 b.ivStatus.imageTintList = ColorStateList.valueOf(ContextCompat.getColor(ctx, R.color.text_secondary))
@@ -56,7 +58,9 @@ class BoxAdapter(
 
     companion object {
         private val DIFF = object : DiffUtil.ItemCallback<BoxItem>() {
-            override fun areItemsTheSame(old: BoxItem, new: BoxItem) = old.id == new.id
+            // box code is unique; "id" is not set when BoxItem is built from BarcodeTable,
+            // so every row had the same id and the list refreshed the wrong rows
+            override fun areItemsTheSame(old: BoxItem, new: BoxItem) = old.box == new.box
             override fun areContentsTheSame(old: BoxItem, new: BoxItem) = old == new
         }
     }

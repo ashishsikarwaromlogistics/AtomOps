@@ -25,7 +25,7 @@ import com.example.atomops.utils.JwtDecoder
 import com.example.atomops.utils.Utils
 import kotlinx.coroutines.launch
 
-class LoginAct : AppCompatActivity() {
+class LoginAct : BaseActivity() {
     lateinit var binding: ActivityLoginBinding
     lateinit var pd: ProgressDialog
     val appprogress: AppProgressDialog by lazy { AppProgressDialog(this) }
@@ -60,10 +60,21 @@ class LoginAct : AppCompatActivity() {
             insets
         }
         pd= ProgressDialog(this)
+
+
+        if(AtomOpsApp.getPreferences(Constants.REMEMBER,"").equals("Y")){
+            binding.etUserId.setText(AtomOpsApp.getPreferences(Constants.USERID,""))
+            binding.etPassword.setText(AtomOpsApp.getPreferences(Constants.EMP_PASS,""))
+            }
+
+
+
+
         binding.btnLogin.setOnClickListener {
             if(binding.etUserId.text.toString().isEmpty()|| binding.etPassword.text.toString().isEmpty()){
 
-              validateCred() }
+              validateCred()
+            }
             else{
             pd.show()
             lifecycleScope.launch {
@@ -107,6 +118,22 @@ class LoginAct : AppCompatActivity() {
                                 AtomOpsApp.savePreferences(Constants.BCODE,branchCode)
                                 AtomOpsApp.savePreferences(Constants.BNAME,"")
                                 AtomOpsApp.savePreferences(Constants.COMP_CODE,companyCode.toString())
+
+
+                                try {
+                                    if(resp.body()!!.data.user.userCategory.equals("EMPLOYEE"))
+                                        AtomOpsApp.savePreferences(Constants.LOADER,resp.body()!!.data.user.employeeCode.toString())
+                                    else AtomOpsApp.savePreferences(Constants.LOADER,resp.body()!!.data.user.externalRefCode.toString())
+                                }catch (e: Exception){}
+
+                                if(binding.tvrem.isChecked){
+                                    AtomOpsApp.savePreferences(Constants.USERID,binding.etUserId.text.toString())
+                                    AtomOpsApp.savePreferences(Constants.EMP_PASS,binding.etPassword.text.toString())
+                                    AtomOpsApp.savePreferences(Constants.REMEMBER,"Y")
+                                    AtomOpsApp.savePreferences(Constants.REMEMBER,"Y")
+                                }else{
+                                    AtomOpsApp.savePreferences(Constants.REMEMBER,"N")
+                                }
 
                                 Log.d("JWT", "Company Code: $companyCode")
                                 Log.d("JWT", "Branch Code: $branchCode")
@@ -185,6 +212,11 @@ class LoginAct : AppCompatActivity() {
                          AtomOpsApp.savePreferences(Constants.BCODE,branchCode)
                          AtomOpsApp.savePreferences(Constants.BNAME,"")
                          AtomOpsApp.savePreferences(Constants.COMP_CODE,companyCode.toString())
+                         try {
+                             if(resp.body()!!.data.user.userCategory.equals("EMPLOYEE"))
+                                 AtomOpsApp.savePreferences(Constants.LOADER,resp.body()!!.data.user.employeeCode.toString())
+                             else AtomOpsApp.savePreferences(Constants.LOADER,resp.body()!!.data.user.externalRefCode.toString())
+                         }catch (e: Exception){}
 
                          Log.d("JWT", "Company Code: $companyCode")
                          Log.d("JWT", "Branch Code: $branchCode")

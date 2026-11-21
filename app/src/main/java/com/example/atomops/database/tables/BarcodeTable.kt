@@ -28,5 +28,7 @@ data class BarcodeTable(
     val eventid: String,
     val clientRef: String,
     val boxloaded: Boolean,
+    var damagereason: String="",
+    var shortreason: String="",
 )
 

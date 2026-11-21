@@ -26,7 +26,8 @@
                 android:layout_marginTop="10dp"
                 android:layout_marginBottom="10dp"
                 android:scaleType="centerCrop"
-                android:src="@drawable/ic_profile"
+
+                android:src="@drawable/progress_loading"
                 app:shapeAppearanceOverlay="@style/CircleImage" />
 
             <LinearLayout

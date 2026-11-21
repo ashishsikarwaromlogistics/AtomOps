@@ -9,5 +9,6 @@ data class Data(
     val manifests: List<Manifest>,
     val route: Route,
     val trip: Trip,
-    val vehicle: Vehicle
+    val vehicle: Vehicle,
+
 )

@@ -16,8 +16,10 @@ import com.example.atomops.models.localloadbox.DocketBoxesRequest
 import com.example.atomops.models.localloadbox.DocketBoxesResponse
 import com.example.atomops.models.localtripload.TripLoadingResponse
 import com.example.atomops.models.localtrips.TripPage
+import com.example.atomops.models.localtripunload.LocalTripUnloadResp
 import com.example.atomops.models.login.LoginMod
 import com.example.atomops.models.login.LoginResp
+import com.example.atomops.models.manifiests.ManifestProgressResponse
 import com.example.atomops.models.password.ChangePassMod
 import com.example.atomops.models.scandoc.ScanDocMod
 import com.example.atomops.models.scandoc.SubmitManifiest
@@ -293,6 +295,15 @@ interface ServiceInterface   {
         @Query("companyCode") companyCode: String
     ): Response<TripLoadingResponse>
 
+    @GET("atom-movement/api/v1/lmfm/trips/{tripNo}/unloading/outstanding")
+    suspend fun getTripUnLoading(
+        @Header("Authorization") auth: String,
+        @Path("tripNo") tripNo: String,
+        @Query("companyCode") companyCode: String
+    ): Response<LocalTripUnloadResp>
+
+
+
 
     @POST("atom-scanning/api/v1/dockets/boxes/query")
     suspend fun getDocketBoxes(
@@ -309,6 +320,14 @@ interface ServiceInterface   {
         @Body request: BulkLoadingRequest
     ): Response<BulkLoadingResponse>
 
+    @POST("atom-movement/api/v1/lmfm/trips/{tripNo}/unloading/scans/bulk")
+    suspend fun submitBulkUnLoading(
+        @Header("Authorization") auth: String,
+        @Path("tripNo") tripNo: String,
+        @Query("companyCode") companyCode: String,
+        @Body request: BulkLoadingRequest
+    ): Response<BulkLoadingResponse>
+
     @POST("atom-movement/api/v1/lmfm/trips/{tripNo}/loading/close")
     suspend fun closeLoading(
         @Header("Authorization") auth: String,
@@ -316,6 +335,14 @@ interface ServiceInterface   {
         @Query("companyCode") companyCode: String,
         @Body request: CloseLoadingRequest
     ): Response<CloseLoadingResponse>
+    @Headers("Accept: application/json")
+    @GET("atom-movement/api/v1/trips/{tripNo}/manifests/{manifestNo}/progress")
+    suspend fun getManifestProgress(
+        @Header("Authorization") token: String,
+        @Path("tripNo") tripNo: String,
+        @Path("manifestNo") manifestNo: String,
+        @Query("branch") branch: String
+    ): Response<ManifestProgressResponse>
 }
 
 

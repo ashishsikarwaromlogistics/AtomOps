@@ -53,7 +53,9 @@ import com.example.atomops.models.seal.SealMod
 import com.example.atomops.networking.ApiClient
 import com.example.atomops.networking.ServiceInterface
 import com.example.atomops.utils.Utils
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -85,6 +87,8 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
     var selectedPosition=0
     lateinit var pd: ProgressDialog
     val appprogress: AppProgressDialog by lazy { AppProgressDialog(this) }
+    var tripdestination=""
+    private var manifestJob: Job? = null   // load of the selected manifest; cancelled when another tab is tapped
     private fun ShowDailog(){
         if(!appprogress.isShowing){
             appprogress.show()
@@ -104,6 +108,7 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+        tripdestination=intent.getStringExtra("tripdestination").toString()
         pd= ProgressDialog(this)
         //  addseal()
         tripId=intent.getStringExtra("tripid").toString()
@@ -117,6 +122,8 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
         binding.rvDockets.setHasFixedSize(false)
         binding.rvDockets.layoutManager = LinearLayoutManager(this)
         (binding.rvDockets.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
+
+
 
         /*finish()
         startActivity(Intent(this@UnloadingAct, LoadingUnloading::class.java))
@@ -139,8 +146,8 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                      }.toMutableList()
                  )
              }.toMutableList()
- 
- 
+
+
              val locallist=barcodedao.getByTrip(tripId)
              for(i in locallist){
              val dataexist=  docketItem.find { data->
@@ -153,14 +160,14 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                      if(boxexist!=null){
                          boxexist.status=i.status
                          boxexist.timeScan=i.timeScan
- 
+
                      }
- 
- 
+
+
                  }
              }
- 
- 
+
+
              // TODO: if scans are persisted, load them from barcodedao here and
              // set status/timeScan on the matching boxes so progress survives a restart.
              binding.tvDocketCount.setText(docketItem.size.toString())
@@ -174,16 +181,17 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
         // adapter.setFilter(DocketFilter.PENDING)   // ALL / PENDING / COMPLETE
 
         binding.save.setOnClickListener {
-           // LaodingImage()
-         //   closeUnloading()
-            Generateevenidbulk()
+            // LaodingImage()
+            //   closeUnloading()
+            getManifestProgress()
         }
 
 
         binding.barcodeText.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_UNSPECIFIED) {
-                val value = binding.barcodeText.text.toString().trim()
+                var value = binding.barcodeText.text.toString().trim()
                 if (value.length > 5) {
+                  //  value= Utils.revertTransform(value)
                     if(boxes.contains(value)) {
                         speak("Duplicate Barcode")
                         Utils.showDialog(
@@ -233,11 +241,11 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                 val mod= BulkIdGenMod(companyCode = AtomOpsApp.getPreferences(Constants.COMP_CODE,"").toInt(),items=items)
                 try {
                     val resp=  ApiClient.getRetrofitclient().create(ServiceInterface::class.java).bulkScan("Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),mod)
-                    if(resp.code()==200){
-                        if(resp.body()!!.status.equals("SUCCESS")){
+                    if (resp.isSuccessful) {
+                        if(resp.body()?.status == "SUCCESS"){
                             //601769  //  Utils.showDialog(this@UnloadingAct,"success",resp.body().message.toString(),R.drawable.ic_baseline_check_circle_24)
                             var errors=""
-                            for(i in resp.body()!!.data.results){
+                            for(i in resp.body()?.data?.results.orEmpty()){
                                 if(i.outcome.equals("APPLIED")||i.outcome.equals("APPLIED_IDEMPOTENT")){
                                     barcodedao.updateeventid(i.boxCode,i.publicEventId.toString())
                                 }else{
@@ -255,11 +263,16 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
 
                                 }
                             }
+                        } else {
+                            showError(bodyMessage(resp.body()?.message))   // status != SUCCESS (was silent before)
                         }
                     }
                     else {
-                        Utils.showDialog(this@UnloadingAct,"error"+resp.code(), Utils.getHttpErrorMessage(resp.code(),resp.errorBody().toString()),R.drawable.ic_baseline_error_24)
-
+                        try{
+                            Utils.showDialog(this@UnloadingAct, "error", resp.errorMessage(), R.drawable.ic_baseline_error_24)
+                        }catch (e:Exception){
+                            Utils.gettrycatcherror(this@UnloadingAct,e)
+                        }
                     }
                 }catch (e: Exception) {
                     Utils.gettrycatcherror(this@UnloadingAct,e)
@@ -279,8 +292,8 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
             val count= barcodedao.updateStatus(barcodevalue, manfiest =currentManifest ,true)
             if(count>0){
                 boxes.add(barcodevalue)
-                binding.tvscannedbarcode.setText(boxes.size.toString())
                 speak("Scan")
+                refreshDocketList(currentManifest)   // updates "scanned/total" in ScanAdapter + counters
             }
             else{
                 speak("Invalid Barcode")
@@ -395,7 +408,8 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
     private fun setupManifestTabs() {
         lifecycleScope.launch {
-            manifestList=   tripDetailsDao.getByTripandmanifiest(tripId)
+            manifestList=   tripDetailsDao.getByTripandmanifiestforUnload(tripId, AtomOpsApp.getPreferences(
+                Constants.BCODE,""))
             binding.llManifestTabs.removeAllViews()
 
             selectedPosition = 0
@@ -430,7 +444,6 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                         // Handle selected manifest here
                         onManifestSelected(manifest, index)
                     }
-                    onManifestSelected(manifest, 0)
                 }
 
                 binding.llManifestTabs.addView(textView)
@@ -438,130 +451,149 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
 
             if (manifestList.isNotEmpty()) {
                 selectTab(0)
+                onManifestSelected(manifestList[0], 0)   // called once, for the first tab only
             }
         }
 
     }
+    private fun TripDetailsTable.toDocketBox(scanned: List<String>, totalBoxes: Int) = DocketBox(
+        // Manifest / trip-level fields
+        manifestNo = manifestNo,
+        legSequence = legSequence,
+        sourceBranch = sourceBranch,
+        destinationBranch = destinationBranch,
+        cnCount = cnCount,
+        boxCountTotal = boxCountTotal,
+        status = status,
+        boxesScanned = boxesScanned,
+        boxesUnloaded = boxesUnloaded,
+        tripId = tripId,
+
+        // Docket-level fields
+        docketNo = docketNo,
+        boxes = totalBoxes,            // was boxCountTotal = whole MANIFEST total -> wrong "x/y"
+        weightKg = weightKg,
+        serviceMode = serviceMode,
+        agingHours = agingHours,
+        documentStatus = documentStatus,
+        missingMarkedAt = missingMarkedAt,
+        missingMarkedBy = missingMarkedBy,
+        fragile = fragile,
+        weightCheckRequired = weightCheckRequired,
+        liquidOil = liquidOil,
+
+        scanboxelist = scanned         // SCANNED box codes of this docket
+    )
+
+    /**
+     * Rebuilds the docket list + counters for [manifest] from the local DB.
+     * ScanAdapter gets a NEW list every time, so "scanned/total" always updates.
+     */
+    private suspend fun refreshDocketList(manifest: String) {
+        val rows = barcodedao.getByManifest(manifest)
+        if (manifest != currentManifest) return            // user switched tab meanwhile
+
+        val rowsByDocket = rows.groupBy { it.docketno }
+        boxes.clear()
+        boxes.addAll(rows.filter { it.isScan }.map { it.box })
+
+        docketlist = docketlisttable.map { t ->
+            val docketRows = rowsByDocket[t.docketNo].orEmpty()
+            t.toDocketBox(
+                scanned    = docketRows.filter { it.isScan }.map { it.box },
+                totalBoxes = if (docketRows.isNotEmpty()) docketRows.size else t.boxes
+            )
+        }
+
+        // keep the scroll position when the list is rebuilt
+        val state = binding.rvDockets.layoutManager?.onSaveInstanceState()
+        scanapdater = ScanAdapter(docketlist, onItemClick = {
+            val intent = Intent(this@UnloadingAct, BoxDetailsAct::class.java)
+            intent.putExtra("docketno", it.docketNo)
+            intent.putExtra("tripId", tripId)
+            startActivity(intent)
+        })
+        binding.rvDockets.adapter = scanapdater
+        state?.let { binding.rvDockets.layoutManager?.onRestoreInstanceState(it) }
+
+        binding.tvDocketCount.text = docketlist.size.toString()
+        binding.tvDocketsCount.text = docketlist.size.toString()
+        binding.tvBoxesCount.text = rows.size.toString()
+        binding.tvscannedbarcode.text = boxes.size.toString()
+        binding.tvManifestProgress.text = "/" + rows.size
+
+        val c = barcodedao.getShortDamageCount(manifest)
+        binding.tvShort.text  = c.shortCount.toString()
+        binding.tvDamage.text = c.damageCount.toString()
+    }
+
     private fun onManifestSelected(manifest: String, position: Int) {
         currentManifest=manifest
-        //LoadingClose()
-        lifecycleScope.launch {
-            docketlisttable= tripDetailsDao.getByManifest(manifest)
-            docketlist = docketlisttable.map { item ->
-                DocketBox(
-                    // Manifest / trip-level fields
-                    manifestNo = item.manifestNo,
-                    legSequence = item.legSequence,
-                    sourceBranch = item.sourceBranch,
-                    destinationBranch = item.destinationBranch,
-                    cnCount = item.cnCount,
-                    boxCountTotal = item.boxCountTotal,
-                    status = item.status,
-                    boxesScanned = item.boxesScanned,
-                    boxesUnloaded = item.boxesUnloaded,
-                    tripId = item.tripId,
+        manifestJob?.cancel()
+        manifestJob = lifecycleScope.launch {
+            docketlisttable = tripDetailsDao.getByManifest(manifest).distinctBy { it.docketNo }
 
-                    // Docket-level fields
-                    docketNo = item.docketNo,
-                    boxes = item.boxCountTotal,
-                    weightKg = 0.0,
-                    serviceMode = null,
-                    agingHours = 0,
-                    documentStatus = null,
-                    missingMarkedAt = null,
-                    missingMarkedBy = null,
-                    fragile = false,
-                    weightCheckRequired = false,
-                    liquidOil = false,
+            // 1) show what is already in the local DB (works offline too)
+            refreshDocketList(manifest)
 
-                    // Initially empty; update when needed
-                    scanboxelist = emptyList()
-                )
-            }
-
-            // docketlist = tripDetailsDao.getByTrip(tripId)
-            scanapdater = ScanAdapter(docketlist)
-            binding.rvDockets.adapter = scanapdater
+            // 2) sync boxes from the server, then redraw
             if(Utils.haveInternet(this@UnloadingAct)){
-                val mydocketlist=mutableListOf<String>()
-                for(i in docketlist){
-                    mydocketlist.add(i.docketNo)
-                }
-                val mod= FIndBoxMod(AtomOpsApp.getPreferences(Constants.COMP_CODE,"").toInt(), mydocketlist)
+                val mydocketlist = docketlisttable.map { it.docketNo }
+                val mod= FIndBoxMod(AtomOpsApp.getPreferences(Constants.COMP_CODE,"").toIntOrNull() ?: 0, mydocketlist)
                 try{
                     val response= ApiClient.getRetrofitclient().create(ServiceInterface::class.java).getAllboxes("Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),mod)
-                    if(response.code()==200){
-                        if(response.body()?.status=="SUCCESS"){
-                            if(response.body()?.data!=null) {
-                                if( response.body()!!.data.dockets.size>0){
-                                    binding.tvDocketCount.setText( response.body()!!.data.dockets.size.toString())
-                                    binding.tvDocketsCount.setText( response.body()!!.data.dockets.size.toString())
-                                    boxes.clear()
-                                    for(i in response.body()!!.data.dockets){
-                                        for(j in i.boxes){
-                                            if(barcodedao.checkexist(j.boxCode)>0){
-                                                if(barcodedao.checkScan(j.boxCode))
-                                                    boxes.add(j.boxCode)
-                                                docketlist = docketlist.map { item ->
-                                                    if(item.docketNo == i.docketNo) {
-                                                        item.copy(
-                                                            scanboxelist = item.scanboxelist + j.boxCode
-                                                        )
-                                                    } else {
-                                                        item
-                                                    }
-                                                }
-                                                Log.d("ashishsikarwar","box already exist")
-                                            }
-                                            else{
-
-                                                val barcodedata = BarcodeTable(
-                                                    docketno= i.docketNo,
-                                                    box = j.boxCode,
-                                                    timeScan = "",
-                                                    status = j.status,
-                                                    voided = j.voided,
-                                                    manifest = manifest,
-                                                    damage = "",
-                                                    isshort = "",
-                                                    damageurl = "",
-                                                    tripId = tripId,
-                                                    isScan = false,
-                                                    eventid = "",
-                                                    clientRef = Utils.GenrateUUID(),
-                                                    boxloaded = false
-                                                )
-                                                if(!j.voided && j.status.equals("IN_TRANSIT"))
-                                                    barcodedao.insert(barcodedata)
-                                            }
-
-                                        }
-
+                    if (manifest != currentManifest) return@launch
+                    if (response.isSuccessful) {
+                        val body = response.body()
+                        if(body?.status=="SUCCESS"){
+                            val dockets = body.data?.dockets.orEmpty()
+                            if(dockets.isNotEmpty()){
+                                // one query instead of 2 per box
+                                val existing = barcodedao.getByManifest(manifest).map { it.box }.toHashSet()
+                                for(i in dockets){
+                                    for(j in i.boxes){
+                                        if (j.boxCode in existing) continue
+                                        if (j.voided || !j.status.equals("IN_TRANSIT")) continue
+                                        barcodedao.insert(
+                                            BarcodeTable(
+                                                docketno= i.docketNo,
+                                                box = j.boxCode,
+                                                timeScan = "",
+                                                status = j.status,
+                                                voided = j.voided,
+                                                manifest = manifest,
+                                                damage = "",
+                                                isshort = "",
+                                                damageurl = "",
+                                                tripId = tripId,
+                                                isScan = false,
+                                                eventid = "",
+                                                clientRef = Utils.GenrateUUID(),
+                                                boxloaded = false
+                                            )
+                                        )
+                                        existing.add(j.boxCode)
                                     }
-
-
-                                    val totalbarcode=barcodedao.getByManifest(manifest).size.toString()
-                                    binding.tvBoxesCount.setText(totalbarcode)
-                                    binding.tvscannedbarcode.setText(boxes.size.toString())
-                                    binding.tvManifestProgress.setText("/"+totalbarcode)
-
-
                                 }
-                                else {
-                                    Utils.showDialog(this@UnloadingAct,"error","no data found",R.drawable.ic_baseline_error_24)
-                                }
+                                refreshDocketList(manifest)
                             }
-                            else{
-                                Utils.showDialog(this@UnloadingAct,"error",response.body()?.message.toString(),R.drawable.ic_baseline_error_24)
+                            else {
+                                Utils.showDialog(this@UnloadingAct,"error","no data found",R.drawable.ic_baseline_error_24)
                             }
                         }else{
-                            Utils.showDialog(this@UnloadingAct,"error",response.body()?.message.toString(),R.drawable.ic_baseline_error_24)
+                            showError(bodyMessage(body?.message))
                         }
-
                     }
                     else{
-                        Utils.geterrormessagewithcode(this@UnloadingAct,response.code(),"")
+                        try{
+                            Utils.showDialog(this@UnloadingAct, "error", response.errorMessage(), R.drawable.ic_baseline_error_24)
+                        }catch (e:Exception){
+                            Utils.gettrycatcherror(this@UnloadingAct,e)
+                        }
                     }
+                }
+                catch (e: CancellationException){
+                    throw e     // tab switched, not an error
                 }
                 catch (e: Exception){
                     Utils.gettrycatcherror(this@UnloadingAct,e)
@@ -594,18 +626,22 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
             val mod= LoadTripMod(actor = AtomOpsApp.getPreferences(Constants.EMP_ID,""), branch = AtomOpsApp.getPreferences(Constants.BCODE,""),companyCode= AtomOpsApp.getPreferences(Constants.COMP_CODE,"").toInt(), items =item, shortBoxes = shortbox)
             try {
                 val resp=ApiClient.getRetrofitclient().create(ServiceInterface::class.java).bulkUnLoadBoxes("Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),currentManifest,mod)
-                if(resp.code()==200){
-                    if(resp.body()!!.status.equals("SUCCESS")){
+                if (resp.isSuccessful) {
+                    if(resp.body()?.status == "SUCCESS"){
                         barcodedao.updateLoadstatus(currentManifest)
                         //LoadingClose()
                         LaodingImage()
-                        Utils.showDialog(this@UnloadingAct,"SUCCESS",resp.body()!!.message.toString(),R.drawable.green_check)
+                        Utils.showDialog(this@UnloadingAct,"SUCCESS",resp.body()?.message.toString(),R.drawable.green_check)
                     }
-                    else   Utils.showDialog(this@UnloadingAct,"Fail",resp.body()!!.message.toString(),R.drawable.green_check)
+                    else   Utils.showDialog(this@UnloadingAct,"Fail",resp.body()?.message.toString(),R.drawable.ic_baseline_error_24)
 
                 }
                 else {
-                    Utils.geterrormessagewithcode(this@UnloadingAct,resp.code(),"")
+                    try{
+                        Utils.showDialog(this@UnloadingAct, "error", resp.errorMessage(), R.drawable.ic_baseline_error_24)
+                    }catch (e:Exception){
+                        Utils.gettrycatcherror(this@UnloadingAct,e)
+                    }
                 }
             }catch (e: Exception){
                 Utils.gettrycatcherror(this@UnloadingAct,e)
@@ -636,15 +672,19 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
 
                             mod
                         )
-                        if(response.code()==200 || response.code()==201){
+                        if (response.isSuccessful) {
                             DismissDialog()
                             Utils.showDialog(this@UnloadingAct,"Alert","Do you want to close Loading?",R.drawable.green_check,{
-                                LoadingClose()
+                                UnLoadingClose()
                             })
                         }
                         else{
                             DismissDialog()
-                            Utils.geterrormessagewithcode(this@UnloadingAct,response.code(),"")
+                            try{
+                                Utils.showDialog(this@UnloadingAct, "error", response.errorMessage(), R.drawable.ic_baseline_error_24)
+                            }catch (e:Exception){
+                                Utils.gettrycatcherror(this@UnloadingAct,e)
+                            }
                         }
                     }
                     catch (e: Exception){
@@ -673,31 +713,35 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                     "PHYSICAL")
                 val resp= ApiClient.getRetrofitclient().create(ServiceInterface::class.java).loadingseal(
                     "Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),tripId,mod)
-                if(resp.code()==200 || resp.code()==201){
-                    Utils.showDialog(this@UnloadingAct,"Success",resp.body()!!.message.toString(),R.drawable.green_check)
+                if (resp.isSuccessful) {
+                    Utils.showDialog(this@UnloadingAct,"Success",resp.body()?.message.toString(),R.drawable.green_check)
                     deleteDatafronted()
                 }else{
-                    Utils.geterrormessagewithcode(this@UnloadingAct,resp.code(),"")
+                    try{
+                        Utils.showDialog(this@UnloadingAct, "error", resp.errorMessage(), R.drawable.ic_baseline_error_24)
+                    }catch (e:Exception){
+                        Utils.gettrycatcherror(this@UnloadingAct,e)
+                    }
                 }
             }catch (e: Exception){
                 Utils.gettrycatcherror(this@UnloadingAct,e)
             }}
     }
-    fun LoadingClose() {
+    fun UnLoadingClose() {
         lifecycleScope.launch {
             try {
+                /*
+                                val isAllBoxLoaded = barcodedao.areAllBoxesLoaded(tripId)
 
-                val isAllBoxLoaded = barcodedao.areAllBoxesLoaded(tripId)
-
-                if (!isAllBoxLoaded) {
-                    Utils.showDialog(
-                        this@UnloadingAct,
-                        "Error",
-                        "Please load all boxes of the manifest",
-                        R.drawable.ic_baseline_error_24
-                    )
-                    return@launch
-                }
+                                if (!isAllBoxLoaded) {
+                                    Utils.showDialog(
+                                        this@UnloadingAct,
+                                        "Error",
+                                        "Please load all boxes of the manifest",
+                                        R.drawable.ic_baseline_error_24
+                                    )
+                                    return@launch
+                                }*///because only one manfiest will show
                 ShowDailog()
                 val mod = CloseMod(
                     AtomOpsApp.getPreferences(Constants.EMP_ID, ""),
@@ -712,7 +756,7 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                         mod
                     )
 
-                if (resp.code() == 200) {
+                if (resp.isSuccessful) {
                     DismissDialog()
                     if (selectedPosition < manifestList.size - 1) {
                         selectedPosition++
@@ -724,11 +768,24 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                             "Success",
                             resp.body()?.message.toString() ?: "Manifiest closed"+"\nPlease Complete Unloading ",
                             R.drawable.green_check,{
-                                if(Utils.haveInternet(this@UnloadingAct))closeUnloading()
+                                if(Utils.haveInternet(this@UnloadingAct)){
+
+
+                                    if(tripdestination.equals(AtomOpsApp.getPreferences(Constants.BCODE,""))){
+                                        CompleteTrip()}
+                                    else {
+                                        finish()
+                                        startActivity(Intent(this@UnloadingAct, LoadingUnloading::class.java))
+
+                                    }
+
+                                }
+
+                                //closeUnloading()
 
                             }
                         )
-                     //   addseal()
+                        //   addseal()
                     }
 
                     Utils.showDialog(
@@ -739,20 +796,12 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                     )
                 }
                 else {
-                    // Error payload lives in errorBody(), not body()
-                    val errorMsg = try {
-                        val json = JSONObject(resp.errorBody()?.string() ?: "")
-                        json.optString("message", "Something went wrong")
-                    } catch (e: Exception) {
-                        "Something went wrong (code ${resp.code()})"
+                    DismissDialog()     // loader was left open on error before
+                    try{
+                        Utils.showDialog(this@UnloadingAct, "error", resp.errorMessage(), R.drawable.ic_baseline_error_24)
+                    }catch (e:Exception){
+                        Utils.gettrycatcherror(this@UnloadingAct,e)
                     }
-
-                    Utils.showDialog(
-                        this@UnloadingAct,
-                        "Error",
-                        errorMsg,
-                        R.drawable.ic_baseline_error_24
-                    )
                 }
             } catch (e: Exception) {
                 DismissDialog()
@@ -761,37 +810,41 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
-    fun closeUnloading(){
+    fun CompleteTrip(){
         ShowDailog()
         val mod= CompleteUnloadmod(AtomOpsApp.getPreferences(Constants.EMP_ID,""),AtomOpsApp.getPreferences(Constants.BCODE,""))
-      lifecycleScope.launch {
-       try {
-           DismissDialog()
-           val response=  ApiClient.getRetrofitclient().create(ServiceInterface::class.java).CompleteUnload(
-               token = "Bearer "+ AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),
-               tripNo = tripId,
-               body = mod
-           )
-           if(response.code()==200){
-               Utils.showDialog(
-                   this@UnloadingAct,
-                   "Success",
-                   response.body()?.message.toString() ?:    "Unload completed",
-                   R.drawable.green_check,{
-                       finish()
-                       startActivity(Intent(this@UnloadingAct, LoadingUnloading::class.java))
-                   }
-               )
-           }
-           else {
-               Utils.geterrormessagewithcode(this@UnloadingAct,response.code(),"")
-           }
-       }
-       catch (e: Exception){
-           DismissDialog()
-           Utils.gettrycatcherror(this@UnloadingAct,e)
-       }
-      }
+        lifecycleScope.launch {
+            try {
+                DismissDialog()
+                val response=  ApiClient.getRetrofitclient().create(ServiceInterface::class.java).CompleteUnload(
+                    token = "Bearer "+ AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),
+                    tripNo = tripId,
+                    body = mod
+                )
+                if (response.isSuccessful) {
+                    Utils.showDialog(
+                        this@UnloadingAct,
+                        "Success",
+                        response.body()?.message.toString() ?:    "Unload completed",
+                        R.drawable.green_check,{
+                            finish()
+                            startActivity(Intent(this@UnloadingAct, LoadingUnloading::class.java))
+                        }
+                    )
+                }
+                else {
+                    try{
+                        Utils.showDialog(this@UnloadingAct, "error", response.errorMessage(), R.drawable.ic_baseline_error_24)
+                    }catch (e:Exception){
+                        Utils.gettrycatcherror(this@UnloadingAct,e)
+                    }
+                }
+            }
+            catch (e: Exception){
+                DismissDialog()
+                Utils.gettrycatcherror(this@UnloadingAct,e)
+            }
+        }
 
 
 
@@ -931,6 +984,102 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
         if(isloading){
             pd.show()
         }else pd.dismiss()
+    }
+
+    private fun getManifestProgress() {
+        if (!Utils.haveInternet(this)) return
+
+        ShowDailog()
+        lifecycleScope.launch {
+            try {
+                val tripNo     = tripId                        // already used in getByTrip(tripId)
+                val manifestNo = currentManifest               // already used in getPendingBoxes(currentManifest)
+                val branchCode = AtomOpsApp.getPreferences(Constants.BCODE, "")
+
+                val resp = ApiClient.getRetrofitclient()
+                    .create(ServiceInterface::class.java)
+                    .getManifestProgress(
+                        "Bearer " + AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""),
+                        tripNo,
+                        manifestNo,
+                        branchCode
+                    )
+
+                DismissDialog()
+
+                if (resp.isSuccessful) {
+                    val body = resp.body()
+                    if (body?.status == "SUCCESS") {
+                        val data = body.data
+                        val progress = data?.progress
+
+                        if (data == null || progress == null) {
+                            showError("No progress data received")
+                            return@launch
+                        }
+
+                        // All boxes loaded and manifest can be closed → offer save
+                        if(body.data.progress.closed==true){
+                            if(tripdestination.equals(AtomOpsApp.getPreferences(Constants.BCODE,""))){
+                                CompleteTrip()}
+                            else {
+                                Utils.showDialog(
+                                    this@UnloadingAct, "Alert", "This manifest already close . plz select another manifest",
+                                    R.drawable.ic_baseline_error_24
+                                )
+                            }
+
+
+                        }
+                        else if(body.data.status.toString().equals("ARRIVED")){
+                            Generateevenidbulk()
+                        }
+                        else if(body.data.status.toString().equals("UNLOADING") && body.data.progress.boxesPending!=0){
+                            saveData()
+                        }
+                        else if(body.data.status.toString().equals("UNLOADING") && body.data.progress.boxesPending==0){
+                            UnLoadingClose()
+                        }
+                        else if(body.data.progress.photo100 != null){
+                            UnLoadingClose()
+                        }
+                        else{
+                            LaodingImage()
+                        }
+                    } else {
+                        showError(bodyMessage(body?.message))
+                    }
+                } else {
+                    showError(resp.errorMessage())
+                }
+            } catch (e: Exception) {
+                DismissDialog()
+                Utils.gettrycatcherror(this@UnloadingAct, e)
+            }
+        }
+    }
+    private fun showError(msg: String) {
+        Utils.showDialog(this, "error", msg, R.drawable.ic_baseline_error_24)
+    }
+    private fun bodyMessage(msg: Any?): String =
+        msg?.toString()?.takeIf { it.isNotBlank() && it != "null" } ?: GENERIC_ERROR
+
+    override fun onResume() {
+        super.onResume()
+        if (currentManifest.isNotEmpty() && ::barcodedao.isInitialized) {
+            lifecycleScope.launch { refreshDocketList(currentManifest) }   // also updates short/damage
+        }
+    }
+    private fun findShartandDamage(){
+        lifecycleScope.launch {
+            /*val manifest: String,
+            @ColumnInfo(name = "trip_id")
+            val tripId: String,*/
+
+            val c = barcodedao.getShortDamageCount(currentManifest)
+            binding.tvShort.text  = c.shortCount.toString()
+            binding.tvDamage.text = c.damageCount.toString()
+        }
     }
 
 }

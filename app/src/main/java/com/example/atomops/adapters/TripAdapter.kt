@@ -6,7 +6,6 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.atomops.databinding.ItemTripBinding
-import com.example.atomops.models.Trip1
 import com.example.atomops.models.trips.Item
 
 class TripAdapter(
@@ -17,14 +16,17 @@ class TripAdapter(
     inner class TripVH(val b: ItemTripBinding) : RecyclerView.ViewHolder(b.root) {
         fun bind(t: Item) = with(b) {
             tvTripId.text = t.tripNo
-            tvDate.text = t.createdAt
+            // "2026-11-05 13:56:39.740638" -> "2026-11-05 13:56"
+            tvDate.text = t.createdAt?.toString()?.take(16) ?: "-"
             tvStatus.text = t.status
-            tvRoute.text = "DELHI TO NOIDA"
-            tvService.text = t.routeType
-            tvDock.text = "dock"
-            tvVehicle.text = t.vehicleNo
+            // source -> destination (was destination-source), and no "null" text
+            tvRoute.text = "${t.sourceBranch ?: "-"} → ${t.destinationBranch ?: "-"}"
+            tvService.text = t.routeType ?: "-"
+            // real dock from the API instead of the fixed word "dock"
+            tvDock.text = t.currentDockNo?.toString()?.takeIf { it.isNotBlank() } ?: "-"
+            tvVehicle.text = t.vehicleNo ?: "-"
             root.setOnClickListener { onItemClick(t) }
-         //   ivMore.setOnClickListener { onMoreClick(t, it) }
+            //   ivMore.setOnClickListener { onMoreClick(t, it) }
         }
     }
 

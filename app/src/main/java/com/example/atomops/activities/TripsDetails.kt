@@ -47,6 +47,7 @@ class TripsDetails : AppCompatActivity() {
             appprogress.dismiss()
         }
     }
+     var tripdestination=""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -73,7 +74,7 @@ class TripsDetails : AppCompatActivity() {
         getTripDetails(tripId)
         binding.btnStartLoading.setOnClickListener {
             if(currentstatus.equals("GATE_IN")){//UNLOADING
-                startActivity(Intent(this, UnloadingAct::class.java).putExtra("currentstatus",currentstatus).putExtra("tripid",intent.getStringExtra("tripid")))
+                startActivity(Intent(this, UnloadingAct::class.java).putExtra("currentstatus",currentstatus).putExtra("tripid",intent.getStringExtra("tripid")).putExtra("tripdestination",tripdestination))
             } else if(currentstatus.equals("PLANNED")){
                 startActivity(Intent(this, DocumentScan::class.java).putExtra("currentstatus",currentstatus).putExtra("tripid",intent.getStringExtra("tripid")))
             }
@@ -95,6 +96,7 @@ class TripsDetails : AppCompatActivity() {
                    binding.tvService.setText(data?.trip?.routeType)
                    binding.tvDock.text = data?.trip?.currentDockNo ?: "--"
                    binding.tvVehicleNo.setText(data?.trip?.vehicleNo)
+                   tripdestination=data!!.trip.destinationBranch
                    binding.tvTripDate.text=data?.trip?.createdAt?.substring(0,11)
                    for (i in data!!.manifests) {
                        for (j in i.dockets) {
@@ -121,7 +123,8 @@ class TripsDetails : AppCompatActivity() {
                                        missingMarkedAt = j.missingMarkedAt,
                                        missingMarkedBy = j.missingMarkedBy, fragile = j.fragile,
                                        weightCheckRequired = j.weightCheckRequired,
-                                       liquidOil = j.liquidOil
+                                       liquidOil = j.liquidOil,
+                                       loadingOrder = i.loadingOrder
                                    )
                                )
                            }
