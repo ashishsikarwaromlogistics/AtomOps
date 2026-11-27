@@ -191,7 +191,7 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
             if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_UNSPECIFIED) {
                 var value = binding.barcodeText.text.toString().trim()
                 if (value.length > 5) {
-                  //  value= Utils.revertTransform(value)
+               value= Utils.revertTransform(value)
                     if(boxes.contains(value)) {
                         speak("Duplicate Barcode")
                         Utils.showDialog(
@@ -539,7 +539,9 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
             // 2) sync boxes from the server, then redraw
             if(Utils.haveInternet(this@UnloadingAct)){
                 val mydocketlist = docketlisttable.map { it.docketNo }
-                val mod= FIndBoxMod(AtomOpsApp.getPreferences(Constants.COMP_CODE,"").toIntOrNull() ?: 0, mydocketlist)
+                val mod= FIndBoxMod(AtomOpsApp.getPreferences(Constants.COMP_CODE,"").toIntOrNull() ?: 0, mydocketlist,
+
+                    "IN_SCAN","UNLOAD",AtomOpsApp.getPreferences(Constants.BCODE, ""))
                 try{
                     val response= ApiClient.getRetrofitclient().create(ServiceInterface::class.java).getAllboxes("Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN,""),mod)
                     if (manifest != currentManifest) return@launch
@@ -553,26 +555,51 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                                 for(i in dockets){
                                     for(j in i.boxes){
                                         if (j.boxCode in existing) continue
-                                        if (j.voided || !j.status.equals("IN_TRANSIT")) continue
-                                        barcodedao.insert(
-                                            BarcodeTable(
-                                                docketno= i.docketNo,
-                                                box = j.boxCode,
-                                                timeScan = "",
-                                                status = j.status,
-                                                voided = j.voided,
-                                                manifest = manifest,
-                                                damage = "",
-                                                isshort = "",
-                                                damageurl = "",
-                                                tripId = tripId,
-                                                isScan = false,
-                                                eventid = "",
-                                                clientRef = Utils.GenrateUUID(),
-                                                boxloaded = false
+                                      //  if (j.voided || !j.status.equals("IN_TRANSIT")  ) continue
+                                        if (!j.voided &&  j.scanAction.equals("SCAN")  ) {
+                                            barcodedao.insert(
+                                                BarcodeTable(
+                                                    docketno= i.docketNo,
+                                                    box = j.boxCode,
+                                                    timeScan = "",
+                                                    status = j.status,
+                                                    voided = j.voided,
+                                                    manifest = manifest,
+                                                    damage = "",
+                                                    isshort = "",
+                                                    damageurl = "",
+                                                    tripId = tripId,
+                                                    isScan = false,
+                                                    eventid = "",
+                                                    clientRef = Utils.GenrateUUID(),
+                                                    boxloaded = false
+                                                )
                                             )
-                                        )
-                                        existing.add(j.boxCode)
+                                            existing.add(j.boxCode)
+                                        }
+                                        else if (!j.voided &&  j.scanAction.equals("ALREADY_SCANNED")  ) {
+                                            barcodedao.insert(
+                                                BarcodeTable(
+                                                    docketno= i.docketNo,
+                                                    box = j.boxCode,
+                                                    timeScan = "",
+                                                    status = j.status,
+                                                    voided = j.voided,
+                                                    manifest = manifest,
+                                                    damage = "",
+                                                    isshort = "",
+                                                    damageurl = "",
+                                                    tripId = tripId,
+                                                    isScan = true,
+                                                    eventid = j.lastMovement.scanEventId,
+                                                    clientRef = Utils.GenrateUUID(),
+                                                    boxloaded = true
+                                                )
+                                            )
+                                            existing.add(j.boxCode)
+                                        }
+
+
                                     }
                                 }
                                 refreshDocketList(manifest)
@@ -630,8 +657,10 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                     if(resp.body()?.status == "SUCCESS"){
                         barcodedao.updateLoadstatus(currentManifest)
                         //LoadingClose()
-                        LaodingImage()
-                        Utils.showDialog(this@UnloadingAct,"SUCCESS",resp.body()?.message.toString(),R.drawable.green_check)
+
+                        Utils.showDialog(this@UnloadingAct,"SUCCESS",resp.body()?.message.toString(),R.drawable.green_check,{
+                            LaodingImage()
+                        })
                     }
                     else   Utils.showDialog(this@UnloadingAct,"Fail",resp.body()?.message.toString(),R.drawable.ic_baseline_error_24)
 
@@ -674,7 +703,7 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                         )
                         if (response.isSuccessful) {
                             DismissDialog()
-                            Utils.showDialog(this@UnloadingAct,"Alert","Do you want to close Loading?",R.drawable.green_check,{
+                            Utils.showDialog(this@UnloadingAct,"Alert","Do you want to close UnLoading?",R.drawable.green_check,{
                                 UnLoadingClose()
                             })
                         }
@@ -773,7 +802,7 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
 
                                     if(tripdestination.equals(AtomOpsApp.getPreferences(Constants.BCODE,""))){
                                         CompleteTrip()}
-                                    else {
+                                    else {//addseal()
                                         finish()
                                         startActivity(Intent(this@UnloadingAct, LoadingUnloading::class.java))
 
@@ -853,6 +882,7 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
 
 
     fun addseal(){
+        if (supportFragmentManager.findFragmentByTag(AddSealBottomSheet.TAG) != null) return
         AddSealBottomSheet { sealNumber ->
             // call your Gate Out API here
             captureAndUpload { path, success ->
@@ -1019,7 +1049,74 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                         }
 
                         // All boxes loaded and manifest can be closed → offer save
-                        if(body.data.progress.closed==true){
+                        //Unloading
+
+                        val myBranch = AtomOpsApp.getPreferences(Constants.BCODE, "")
+
+                        when {
+                            // This branch is not this manifest's destination: nothing to unload here
+                            data.stage != "UNLOADING" -> {
+                                Utils.showDialog(
+                                    this@UnloadingAct,
+                                    "Alert",
+                                    "This manifest is not unloaded at your branch. Please select another manifest",
+                                    R.drawable.ic_baseline_error_24
+                                )
+                            }
+
+                            // Unloading already closed (manifest COMPLETED)
+                            progress.closed == true -> {
+                                Log.d("ashishsikarwar",tripdestination)
+                                if (tripdestination == myBranch) {
+                                    CompleteTrip()
+                                }
+
+                                if (selectedPosition == manifestList.size - 1) {
+                                    addseal()
+                                }
+
+                                else {
+                                    Utils.showDialog(
+                                        this@UnloadingAct,
+                                        "Alert",
+                                        "This manifest is already closed. Please select another manifest",
+                                        R.drawable.ic_baseline_error_24
+                                    )
+                                }
+                            }
+
+                            // Vehicle arrived, unloading not started yet
+                            data.status == "ARRIVED" -> Generateevenidbulk()
+
+                            // Unloading in progress
+                            data.status == "UNLOADING" -> when {
+                                // Boxes still to scan off
+                                progress.boxesPending > 0 -> saveData()
+
+                                // All scanned, 100% photo still needed
+                                progress.closeBlockers!!.contains("UNLOADING_PHOTO_REQUIRED") -> LaodingImage()
+
+                                // Nothing blocks Close
+                                progress.canClose == true -> UnLoadingClose()
+
+                                // Any other blocker the server reports
+                                else -> Utils.showDialog(
+                                    this@UnloadingAct,
+                                    "Alert",
+                                    "Cannot close unloading: ${progress.closeBlockers.joinToString()}",
+                                    R.drawable.ic_baseline_error_24
+                                )
+                            }
+
+                            // Any other status (still loading / in transit): not at this branch yet
+                            else -> Utils.showDialog(
+                                this@UnloadingAct,
+                                "Alert",
+                                "This manifest has not arrived yet (status: ${data.status}). Please select another manifest",
+                                R.drawable.ic_baseline_error_24
+                            )
+                        }
+                       /* if(body.data.progress.closed==true){
                             if(tripdestination.equals(AtomOpsApp.getPreferences(Constants.BCODE,""))){
                                 CompleteTrip()}
                             else {
@@ -1045,7 +1142,7 @@ class UnloadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                         }
                         else{
                             LaodingImage()
-                        }
+                        }*/
                     } else {
                         showError(bodyMessage(body?.message))
                     }

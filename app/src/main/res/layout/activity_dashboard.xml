@@ -53,7 +53,7 @@
               android:src="@drawable/ic_wave"
               app:layout_constraintStart_toStartOf="parent"
               app:layout_constraintTop_toTopOf="parent"
-              app:tint="#FFFFFF" />
+                />
 
           <LinearLayout
               android:id="@+id/headerUserInfo"
@@ -148,7 +148,7 @@
                   android:paddingEnd="7dp"
                   android:textColor="#222222"
                   android:textColorHint="#6D747A"
-                  android:textSize="11sp" />
+                  android:textSize="@dimen/_11ssp" />
 
               <View
                   android:layout_width="1dp"
@@ -162,10 +162,11 @@
                   android:layout_marginStart="4dp"
                   android:contentDescription="Voice search"
                   android:padding="5dp"
-                  android:src="@android:drawable/stat_notify_missed_call"
+                  android:src="@drawable/ic_barcode"
                   app:tint="#176E75" />
             </LinearLayout>
           </androidx.cardview.widget.CardView>
+
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <!-- Route / warehouse illustration -->
@@ -216,7 +217,7 @@
                 android:layout_height="wrap_content"
                 android:text="My Stock"
                 android:textColor="#20262A"
-                android:textSize="11sp"
+                android:textSize="@dimen/_11ssp"
                 android:textStyle="bold" />
 
             <TextView
@@ -355,14 +356,14 @@
                   android:layout_height="wrap_content"
                   android:text="Request\nManagement"
                   android:textColor="#22272B"
-                  android:textSize="11sp"
+                  android:textSize="@dimen/_11ssp"
                   android:textStyle="bold"
                   app:layout_constraintStart_toStartOf="parent"
                   app:layout_constraintTop_toTopOf="parent"
                   app:layout_constraintEnd_toEndOf="parent" />
 
               <ImageView
-                  android:layout_width="@dimen/_80sdp"
+                  android:layout_width="@dimen/_50sdp"
                   android:layout_height="@dimen/_60sdp"
                   android:contentDescription="@null"
                   android:scaleType="fitCenter"
@@ -394,14 +395,14 @@
                   android:layout_height="wrap_content"
                   android:text="Yard\nManagement"
                   android:textColor="#22272B"
-                  android:textSize="11sp"
+                  android:textSize="@dimen/_11ssp"
                   android:textStyle="bold"
                   app:layout_constraintStart_toStartOf="parent"
                   app:layout_constraintTop_toTopOf="parent"
                   app:layout_constraintEnd_toEndOf="parent" />
 
               <ImageView
-                  android:layout_width="@dimen/_80sdp"
+                  android:layout_width="@dimen/_60sdp"
                   android:layout_height="@dimen/_60sdp"
                   android:contentDescription="@null"
                   android:scaleType="fitCenter"
@@ -452,7 +453,7 @@
                   android:layout_height="wrap_content"
                   android:text="Loading &amp; Unloading"
                   android:textColor="#20262A"
-                  android:textSize="11sp"
+                  android:textSize="@dimen/_11ssp"
                   android:textStyle="bold" />
 
               <TextView
@@ -461,20 +462,20 @@
                   android:layout_marginTop="7dp"
                   android:text="Assigned Trips (Today)"
                   android:textColor="#70787D"
-                  android:textSize="8sp" />
+                  android:textSize="@dimen/_8ssp" />
 
               <TextView
                   android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
                   android:text="08"
                   android:textColor="#222222"
-                  android:textSize="11sp"
+                  android:textSize="@dimen/_11ssp"
                   android:textStyle="bold" />
             </LinearLayout>
 
             <ImageView
                 android:id="@+id/ivLoading"
-                android:layout_width="@dimen/_80sdp"
+                android:layout_width="@dimen/_60sdp"
                 android:layout_height="@dimen/_70sdp"
                 android:contentDescription="@null"
                 android:scaleType="fitCenter"
@@ -514,13 +515,13 @@
                   android:layout_height="wrap_content"
                   android:text="Local\nTrip"
                   android:textColor="#20262A"
-                  android:textSize="10sp"
+                  android:textSize="@dimen/_11ssp"
                   android:textStyle="bold"
                   app:layout_constraintStart_toStartOf="parent"
                   app:layout_constraintTop_toTopOf="parent" />
 
               <ImageView
-                  android:layout_width="@dimen/_80sdp"
+                  android:layout_width="@dimen/_60sdp"
                   android:layout_height="@dimen/_70sdp"
                   android:contentDescription="@null"
                   android:src="@drawable/local_trip"
@@ -549,13 +550,13 @@
                   android:layout_height="wrap_content"
                   android:text="Mid-Mile\nTrip"
                   android:textColor="#20262A"
-                  android:textSize="10sp"
+                  android:textSize="@dimen/_11ssp"
                   android:textStyle="bold"
                   app:layout_constraintStart_toStartOf="parent"
                   app:layout_constraintTop_toTopOf="parent" />
 
               <ImageView
-                  android:layout_width="@dimen/_80sdp"
+                  android:layout_width="@dimen/_60sdp"
                   android:layout_height="@dimen/_70sdp"
                   android:contentDescription="@null"
                   android:src="@drawable/mid_mile_trip"

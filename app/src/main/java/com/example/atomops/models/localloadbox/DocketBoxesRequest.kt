@@ -4,5 +4,8 @@ import com.google.gson.annotations.SerializedName
 
 data class DocketBoxesRequest(
     @SerializedName("companyCode") val companyCode: Int,
-    @SerializedName("docketNos") val docketNos: List<String>
+    @SerializedName("docketNos") val docketNos: List<String>,
+    val eventType:String,
+    val scanStage:String,
+    val branchCode:String
 )

@@ -34,7 +34,7 @@ class LocalTripAct : AppCompatActivity() {
         if(it.trip_status.equals("CREATED",true)){
             startActivity(Intent(this,LocalLoading::class.java).putExtra("tripId",it.trip_no))
         }
-        else if(it.trip_status.equals("GATE_IN",true))
+        else if(it.trip_status.equals("GATE_IN",true) || it.trip_status.equals("CLOUSER_PENDING",true))
             startActivity(Intent(this,LocalUnLoading::class.java).putExtra("tripId",it.trip_no))
         else {
             Utils.showDialog(this, "error", "Invalid Trip Status "+it.trip_status, R.drawable.ic_baseline_error_24)
@@ -43,13 +43,13 @@ class LocalTripAct : AppCompatActivity() {
     private var allTrips: List<Item> = emptyList()
     private var selectedTab = "All Trips"
 
-    // Tab title -> trip_status shown in that tab ("" = all trips)
+    // Tab title -> trip_status values shown in that tab (empty list = all trips)
     private val tabStatusMap = linkedMapOf(
-        "All Trips" to "",
-        "Loading"   to "CREATED",
-        "Unloading" to "GATE_IN",
-        "Completed" to "COMPLETED",
-        "Cancelled" to "CANCELLED"
+        "All Trips" to emptyList(),
+        "Loading"   to listOf("CREATED"),
+        "Unloading" to listOf("GATE_IN", "CLOUSER_PENDING"),
+        "Completed" to listOf("COMPLETED"),
+        "Cancelled" to listOf("CANCELLED")
     )
     // TODO: replace "YOUR_TOKEN" with your stored access token (SharedPreferences etc.)
     private val serviceinterface by lazy { ApiClient.getRetrofitclient().create(ServiceInterface::class.java)  }
@@ -106,14 +106,14 @@ class LocalTripAct : AppCompatActivity() {
             try {
                 val res = serviceinterface.getTrips(auth = "Bearer "+AtomOpsApp.getPreferences(Constants.JWTTOKEN,""), companyCode = AtomOpsApp.getPreferences(
                     Constants.COMP_CODE,""), loader = AtomOpsApp.getPreferences(Constants.LOADER,""))
-               /* if(res.code()==200){
-                    allTrips = res.body()!!.data?.items!!
-                    updateSummary()
-                    applyFilter()
-                }
-                else {
-                    Utils.handleHttpError(this@LocalTripAct,res.code())
-                }*/
+                /* if(res.code()==200){
+                     allTrips = res.body()!!.data?.items!!
+                     updateSummary()
+                     applyFilter()
+                 }
+                 else {
+                     Utils.handleHttpError(this@LocalTripAct,res.code())
+                 }*/
                 if (res.isSuccessful) {
                     val items = res.body()?.data?.items
                     if (items != null) {
@@ -132,7 +132,7 @@ class LocalTripAct : AppCompatActivity() {
                     }catch (e:Exception){
                         Utils.gettrycatcherror(this@LocalTripAct,e)
                     }
-                    }
+                }
 
             } catch (e: Exception) {
                 Toast.makeText(this@LocalTripAct, e.localizedMessage ?: "Network error", Toast.LENGTH_SHORT).show()
@@ -144,19 +144,22 @@ class LocalTripAct : AppCompatActivity() {
 
     // Summary card counts (always from the full list, not the filtered one)
     private fun updateSummary() {
-        fun count(status: String) = "%02d".format(allTrips.count { it.trip_status.equals(status, true) })
+        fun count(tab: String): String {
+            val statuses = tabStatusMap[tab].orEmpty()
+            return "%02d".format(allTrips.count { trip -> statuses.any { trip.trip_status.equals(it, true) } })
+        }
         binding.tvTotal.text     = "%02d".format(allTrips.size)   // all trips
-        binding.tvLoading.text   = count("CREATED")               // Loading tab
-        binding.tvUnloading.text = count("GATE_IN")               // Unloading tab
-        binding.tvCompleted.text = count("COMPLETED")             // Completed tab
+        binding.tvLoading.text   = count("Loading")      // CREATED
+        binding.tvUnloading.text = count("Unloading")    // GATE_IN + CLOUSER_PENDING
+        binding.tvCompleted.text = count("Completed")    // COMPLETED
     }
 
     private fun applyFilter() {
         val q = binding.etSearch.text.toString().trim()
-        val status = tabStatusMap[selectedTab].orEmpty()
+        val statuses = tabStatusMap[selectedTab].orEmpty()
         tripAdapter.submitList(
             allTrips.filter {
-                (status.isEmpty() || it.trip_status.equals(status, true)) &&
+                (statuses.isEmpty() || statuses.any { s -> it.trip_status.equals(s, true) }) &&
                         it.trip_no.contains(q, ignoreCase = true)
             }
         )

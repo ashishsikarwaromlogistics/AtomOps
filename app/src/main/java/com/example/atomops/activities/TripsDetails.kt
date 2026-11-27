@@ -37,6 +37,8 @@ class TripsDetails : AppCompatActivity() {
     var tripId=""
     var currentstatus=""
     val appprogress: AppProgressDialog by lazy { AppProgressDialog(this) }
+    var code=""
+    var manifiselistcount=0
     private fun ShowDailog(){
         if(!appprogress.isShowing){
             appprogress.show()
@@ -57,11 +59,16 @@ class TripsDetails : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+        "currentstatus"
+        binding.tvTripStatus.setText(intent.getStringExtra("currentstatus"))
         binding.ivBack.setOnClickListener { finish() }
         currentstatus=intent.getStringExtra("currentstatus").toString()
         userDao = (application as AtomOpsApp).database.userDao()
         getbarcodedao = (application as AtomOpsApp).database.getBarcodeDao()
         tripDetailsDao = (application as AtomOpsApp).database.tripDetailDao()
+        binding.ivProfile.setOnClickListener {
+            startActivity(Intent(this, MyProfile::class.java))
+        }
        /* lifecycleScope.launch {
 
             val user = userDao.insertUser(User(firstName = "John", lastName = "Doe"))   // suspend function in DAO
@@ -78,8 +85,17 @@ class TripsDetails : AppCompatActivity() {
             } else if(currentstatus.equals("PLANNED")){
                 startActivity(Intent(this, DocumentScan::class.java).putExtra("currentstatus",currentstatus).putExtra("tripid",intent.getStringExtra("tripid")))
             }
-            else
-            startActivity(Intent(this,LoadingAct::class.java).putExtra("currentstatus",currentstatus).putExtra("tripid",intent.getStringExtra("tripid")))
+            else{
+                if(manifiselistcount==0){
+                    Utils.showDialog(this, "error", "No Manifest Found for this Trip", R.drawable.ic_baseline_error_24)
+                }
+                else
+                    startActivity(Intent(this,LoadingAct::class.java)
+                        .putExtra("code",code)
+                        .putExtra("currentstatus",currentstatus).
+                        putExtra("tripid",intent.getStringExtra("tripid")))
+            }
+
         }
     }
     fun getTripDetails(tripid:String){
@@ -97,13 +113,16 @@ class TripsDetails : AppCompatActivity() {
                    binding.tvDock.text = data?.trip?.currentDockNo ?: "--"
                    binding.tvVehicleNo.setText(data?.trip?.vehicleNo)
                    tripdestination=data!!.trip.destinationBranch
+                  code= data.nextStep.code
                    binding.tvTripDate.text=data?.trip?.createdAt?.substring(0,11)
+                   manifiselistcount=data!!.manifests.size
                    for (i in data!!.manifests) {
                        for (j in i.dockets) {
                            val exists = tripDetailsDao.existsDocket(j.docketNo)
                            if (!exists) {
                                tripDetailsDao.insert(
                                    TripDetailsTable(
+                                       manifeststatus = i.status,
                                        manifestNo = i.manifestNo,
                                        legSequence = i.legSequence,
                                        sourceBranch = i.sourceBranch,
@@ -127,6 +146,9 @@ class TripsDetails : AppCompatActivity() {
                                        loadingOrder = i.loadingOrder
                                    )
                                )
+                           }
+                           else {
+                               tripDetailsDao.updaterunningManifestStatus(i.manifestNo,i.status)
                            }
                        }
                    }

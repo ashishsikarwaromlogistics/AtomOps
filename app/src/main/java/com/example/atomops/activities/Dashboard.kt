@@ -40,11 +40,16 @@ class Dashboard : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-        AtomOpsApp.savePreferences(Constants.BCODE,"2115")
+     //   AtomOpsApp.savePreferences(Constants.BCODE,"1315")
 
-         setText()
+
          setclick()
 
+    }
+
+    override fun onResume() {
+        super.onResume()
+        setText()
     }
      private fun setText(){
         binding.tvname.text="Hi,"+ AtomOpsApp.getPreferences(Constants.EMPNAME,"")
@@ -52,6 +57,16 @@ class Dashboard : AppCompatActivity() {
     }
 
      private fun setclick() {
+         binding.ivGreeting.setOnClickListener {
+             startActivity(Intent(this, MyProfile::class.java))
+         }
+         binding.ivProfile.setOnClickListener {
+             startActivity(Intent(this, MyProfile::class.java))
+         }
+         binding.ivVoiceSearch.setOnClickListener {
+             startActivity(Intent(this, EncryptActvity::class.java))
+         }
+
         binding.crdmidmile.setOnClickListener {
             startActivity(Intent(this,DocumentScan::class.java))
             //startActivity(Intent(this,MiddleMileAct::class.java))
@@ -95,4 +110,6 @@ class Dashboard : AppCompatActivity() {
         }
 
     }
+
+
 }

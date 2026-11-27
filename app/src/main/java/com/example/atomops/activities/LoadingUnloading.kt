@@ -91,6 +91,9 @@ class LoadingUnloading : AppCompatActivity() {
         setupToolbar()
         setupTabs()
         setupList()
+        binding.ivProfile.setOnClickListener {
+            startActivity(Intent(this, MyProfile::class.java))
+        }
         binding.ivBack.setOnClickListener { finish() }
         // Initial load (first tab). The tab listener is added after the first tab
         // is selected, so it does not fire a duplicate call.
@@ -169,14 +172,27 @@ class LoadingUnloading : AppCompatActivity() {
 
     private fun setupList() {
         adapter = TripAdapter(
+            //PLANNED,CREATED,READY_FOR_DISPATCH,GATE_OUT_IN_TRANSIT,GATE_IN,COMPLETED,CANCELLED
             onItemClick = { trip ->
                 if(trip.status.equals("CANCELLED")){
-                    Utils.showDialog(this@LoadingUnloading,"error","This is Cancelled Trip",R.drawable.ic_baseline_error_24)
+                    Utils.showDialog(this@LoadingUnloading,"error","This trip has been cancelled. No further actions can be performed.",R.drawable.ic_baseline_error_24)
                 }
                 else if(trip.status.equals("COMPLETED")){
-                    Utils.showDialog(this@LoadingUnloading,"error","Already Completed Trip",R.drawable.ic_baseline_error_24)
+                    Utils.showDialog(this@LoadingUnloading,"error","This trip has already been completed. No further changes are allowed.",R.drawable.ic_baseline_error_24)
 
                 }
+
+                else if(trip.status.equals("GATE_OUT_IN_TRANSIT")){
+                    Utils.showDialog(this@LoadingUnloading,"error","This trip has already passed the gate and is currently in transit.",R.drawable.ic_baseline_error_24)
+
+                }
+
+                else if(trip.status.equals("READY_FOR_DISPATCH")){
+                    Utils.showDialog(this@LoadingUnloading,"error","This trip is already ready for dispatch. No further dispatch action is required.",R.drawable.ic_baseline_error_24)
+
+                }
+
+
                 else if(trip.status.equals("PLANNED")){
                     startActivity(
                         Intent(this, TripsDetails::class.java).putExtra("currentstatus","PLANNED").putExtra("tripid", trip.tripNo)
@@ -188,17 +204,33 @@ class LoadingUnloading : AppCompatActivity() {
                         Intent(this, TripsDetails::class.java).putExtra("currentstatus","GATE_IN").putExtra("tripid", trip.tripNo)
                     )
                 }
-                else
+                else if(trip.status.equals("CREATED")){
                     startActivity(
                         Intent(this, TripsDetails::class.java).putExtra("currentstatus",currentstatus).putExtra("tripid", trip.tripNo)
                     )
+                }
+                //
+                else
+                    Utils.showDialog(this@LoadingUnloading,"error","Trip Status is "+trip.status,R.drawable.ic_baseline_error_24)
+
+                /*startActivity(
+                    Intent(this, TripsDetails::class.java).putExtra("currentstatus",currentstatus).putExtra("tripid", trip.tripNo)
+                )*/
                 Toast.makeText(this, trip.tripNo, Toast.LENGTH_SHORT).show()
             },
             onMoreClick = { trip, anchor ->
                 PopupMenu(this, anchor).apply {
-                    menu.add("View Details")
-                    menu.add("Cancel Trip")
+                    menu.add("Document Scan")
+                   // menu.add("Cancel Trip")
                     setOnMenuItemClickListener {
+                        if(trip.status.equals("PLANNED")||(trip.status.equals("CREATED")))
+                        startActivity(
+                            Intent(this@LoadingUnloading, TripsDetails::class.java).putExtra("currentstatus","PLANNED").putExtra("tripid", trip.tripNo)
+                        )
+                        else {
+                            Utils.showDialog(this@LoadingUnloading,"error","Invalid Status",R.drawable.ic_baseline_error_24)
+                        }
+
                         Toast.makeText(
                             this@LoadingUnloading,
                             "${it.title}: ${trip.tripNo}",
@@ -216,6 +248,14 @@ class LoadingUnloading : AppCompatActivity() {
 
         // Load the next page when the user is 5 rows from the bottom
         binding.rvTrips.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            // user drags at the very end: onScrolled is NOT called when the list can't move
+            override fun onScrollStateChanged(rv: RecyclerView, newState: Int) {
+                if (!rv.canScrollVertically(1)) {
+                    Log.d("Pagination", "end of list: isLoading=$isLoading isLastPage=$isLastPage page=$currentPage shown=${allTrips.size} total=$totalTrips")
+                    if (!isLoading && !isLastPage) loadNextPage()
+                }
+            }
+
             override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
                 if (dy <= 0 || isLoading || isLastPage) return
                 val lastVisible = lm.findLastVisibleItemPosition()
@@ -225,7 +265,8 @@ class LoadingUnloading : AppCompatActivity() {
     }
 
     private fun loadNextPage() {
-        if (!Utils.haveInternet(this)) return
+        Log.d("Pagination", "loadNextPage -> page ${currentPage + 1}")
+        if (!Utils.haveInternet(this)) { Log.d("Pagination", "no internet -> page not requested"); return }
         if (searchText.isEmpty()) LoadData(selectedStatus, currentPage + 1)
         else fliterdata(searchText, currentPage + 1)
     }
@@ -382,7 +423,14 @@ class LoadingUnloading : AppCompatActivity() {
         totalTrips = total
         // e.g. total = 13, size = 20 -> page 1 already has everything -> no more calls
         //      total = 45, size = 20 -> pages 1, 2, 3 are loaded, then it stops
-        isLastPage = items.isEmpty() || page * PAGE_SIZE >= total
+        // Compare with what we REALLY have, not page * PAGE_SIZE:
+        // if the server sends fewer rows per page than PAGE_SIZE (e.g. 10 of total 20),
+        // "1 * 20 >= 20" wrongly said "last page" and page 2 was never requested.
+        isLastPage = when {
+            items.isEmpty() -> true
+            total > 0       -> allTrips.size >= total
+            else            -> items.size < PAGE_SIZE
+        }
         applyFilters()
         Log.d("Pagination", "loaded page=$page got=${items.size} total=$total shown=${allTrips.size} lastPage=$isLastPage")
 

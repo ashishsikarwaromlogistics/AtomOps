@@ -52,7 +52,7 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
     private fun ShowDailog() { if (!appprogress.isShowing) appprogress.show() }
     private fun DismissDialog() { if (appprogress.isShowing) appprogress.dismiss() }
     private val serviceinterface by lazy { ApiClient.getRetrofitclient().create(ServiceInterface::class.java)  }
-   var tripId=""
+    var tripId=""
     private var docketBoxes: List<DocketBoxInfo> = emptyList()
     var item=this//LocalLoadDocketAdapter.OnItemClickListener
     private val docketAdapter = LocalLoadDocketAdapter(item)
@@ -62,7 +62,7 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
     lateinit var dao: LocalLoadbarcodeDao
     private lateinit var textToSpeech: TextToSpeech
     private var boxes: MutableList<String> = mutableListOf()
-     var serial:String=""
+    var serial:String=""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -72,6 +72,7 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+        binding.ivBack.setOnClickListener { finish() }
         serial= Utils.getSerial(this)
         textToSpeech = TextToSpeech(this, this)
         dao = (application as AtomOpsApp).database.getLocalLoadbarcode()
@@ -81,7 +82,8 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
         binding.tvTripId.setText(tripId)
         binding.barcodeText.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_UNSPECIFIED) {
-                val value = binding.barcodeText.text.toString().trim()
+                var value = binding.barcodeText.text.toString().trim()
+                value= Utils.revertTransform(value)
                 if (value.length > 5) {
                     if(boxes.contains(value)) {
                         speak("Duplicate Barcode")
@@ -226,7 +228,7 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
                     }catch (e:Exception){
                         Utils.gettrycatcherror(this@LocalLoading,e)
                     }
-                   // Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
+                    // Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
                 }
             } catch (e: Exception) {
                 Utils.gettrycatcherror(this@LocalLoading, e)
@@ -238,7 +240,10 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
     private suspend fun loadDocketBoxes(docketNos: List<String>) {
         val request = DocketBoxesRequest(
             companyCode = AtomOpsApp.getPreferences(Constants.COMP_CODE, "").toIntOrNull() ?: 0,
-            docketNos = docketNos
+            docketNos = docketNos,
+            eventType = "OUT_SCAN",
+            scanStage = "DELIVERY",
+            branchCode = AtomOpsApp.getPreferences(Constants.BCODE, "")
         )
         val res = serviceinterface.getDocketBoxes(
             auth = "Bearer " + AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""),
@@ -266,18 +271,39 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
                         continue                       // already in DB → don't insert again
                     }
 
-                    itemsToInsert.add(
-                        LocalLoadbarcode(
-                            tripId     = tripId,
-                            barcodebox = boxCode,
-                            docket     = docket.docketNo,
-                            scanStatus = "Unscanned",
-                            scanAt     = "",
-                            scanId     = "",
-                            eventId    = ""
+                    else if(box.scanAction.equals("SCAN",true)){
+                        itemsToInsert.add(
+                            LocalLoadbarcode(
+                                tripId     = tripId,
+                                barcodebox = boxCode,
+                                docket     = docket.docketNo,
+                                scanStatus = "Unscanned",
+                                scanAt     = "",
+                                scanId     = "",
+                                eventId    = ""
+                            )
                         )
-                    )
-                    existingBoxCodes.add(boxCode)      // dedupe within response
+                        existingBoxCodes.add(boxCode)
+
+                    }
+                    else if(box.scanAction.equals("ALREADY_SCANNED",true)||box.scanActionReason.equals("SCAN",true)){
+                        itemsToInsert.add(
+                            LocalLoadbarcode(
+                                tripId     = tripId,
+                                barcodebox = boxCode,
+                                docket     = docket.docketNo,
+                                scanStatus = "Scanned",
+                                scanAt     = box.lastMovement!!.scannedAt,
+                                scanId     = Utils.GenrateUUID(),
+                                eventId    = box.lastMovement!!.scanEventId.toString()
+                            )
+                        )
+                        existingBoxCodes.add(boxCode)      // dedupe within response
+                    }
+
+
+
+                    // dedupe within response
                 }
             }
 
@@ -295,7 +321,7 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
             }catch (e:Exception){
                 Utils.gettrycatcherror(this@LocalLoading,e)
             }
-           // Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
+            // Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
         }
     }
     /*private suspend fun loadDocketBoxes(docketNos: List<String>) {
@@ -347,10 +373,10 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
     override fun onItemClick(docket: TripDocket) {
         startActivity(
             Intent(
-            this, LocalLoadBoxDetails::class.java).
-                putExtra("tripId",tripId)
+                this, LocalLoadBoxDetails::class.java).
+            putExtra("tripId",tripId)
                 .putExtra("docketNo",docket.docketNo)
-                )
+        )
 
     }
     private fun speak(text: String) {
@@ -431,6 +457,12 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
                 // Docket count comes from trip (server) — leave it
                 binding.tvDocketCount.text = (tripLoading?.totalDockets ?: 0).toString()
                 binding.tvBoxesCount.text  = total.toString()
+
+                // docket rows: scanned/total + green tick from the local DB
+                val counts = dao.getByTrip(tripId)
+                    .groupBy { it.docket.orEmpty() }
+                    .mapValues { (_, rows) -> rows.count { it.scanStatus.equals("Scanned", true) } to rows.size }
+                docketAdapter.submitLocalCounts(counts)
             } catch (e: Exception) {
                 Utils.gettrycatcherror(this@LocalLoading, e)
             }
@@ -470,6 +502,11 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
 
 
                 val mod= BulkIdGenMod(companyCode = AtomOpsApp.getPreferences(Constants.COMP_CODE,"").toInt(),items=items)
+                val eventids=   dao.areAllEventIdsFilled(tripId)
+                if(eventids){
+                    submitBulk()
+                    return@launch
+                }
                 if(items.size==0){
                     DismissDialog()
                     submitBulk()
@@ -612,7 +649,7 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
                     }catch (e:Exception){
                         Utils.gettrycatcherror(this@LocalLoading,e)
                     }
-                   // Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
+                    // Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
                 }
             } catch (e: Exception) {
                 Utils.gettrycatcherror(this@LocalLoading, e)
@@ -749,6 +786,10 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
                     request = CloseLoadingRequest(actor = AtomOpsApp.getPreferences(Constants.EMP_ID, ""))
                 )
                 if (res.isSuccessful) {
+                    lifecycleScope.launch {
+                 dao.deleteByTripId(tripId)
+                  }
+
                     Toast.makeText(this@LocalLoading, "Loading closed", Toast.LENGTH_SHORT).show()
                     setResult(RESULT_OK)
                     finish()
@@ -758,7 +799,7 @@ class LocalLoading : AppCompatActivity() , LocalLoadDocketAdapter.OnItemClickLis
                     }catch (e:Exception){
                         Utils.gettrycatcherror(this@LocalLoading,e)
                     }
-                   // Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
+                    // Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
                 }
             } catch (e: Exception) {
                 Utils.gettrycatcherror(this@LocalLoading, e)

@@ -29,12 +29,16 @@ import com.example.atomops.models.bulkids.Result
 import com.example.atomops.models.bulkload.BulkException
 import com.example.atomops.models.bulkload.BulkItem
 import com.example.atomops.models.bulkload.BulkLoadingRequest
+import com.example.atomops.models.localloadbox.DocketBoxInfo
+import com.example.atomops.models.localloadbox.DocketBoxesRequest
 import com.example.atomops.models.localtripunload.Data as TripUnloadingData
 import com.example.atomops.networking.ApiClient
 import com.example.atomops.networking.ServiceInterface
 import com.example.atomops.utils.Utils
 import kotlinx.coroutines.launch
 import java.util.Locale
+import kotlin.collections.filter
+import kotlin.collections.orEmpty
 
 class LocalUnLoading : AppCompatActivity() , LocalUnLoadDocketAdapter.OnItemClickListener, TextToSpeech.OnInitListener {
 
@@ -42,6 +46,8 @@ class LocalUnLoading : AppCompatActivity() , LocalUnLoadDocketAdapter.OnItemClic
 
     private lateinit var binding: ActivityLocalUnLoadingBinding
     private fun ShowDailog() { if (!appprogress.isShowing) appprogress.show() }
+
+
     private fun DismissDialog() { if (appprogress.isShowing) appprogress.dismiss() }
     private val serviceinterface by lazy { ApiClient.getRetrofitclient().create(ServiceInterface::class.java)  }
     var tripId=""
@@ -56,6 +62,7 @@ class LocalUnLoading : AppCompatActivity() , LocalUnLoadDocketAdapter.OnItemClic
     private lateinit var textToSpeech: TextToSpeech
     private var boxes: MutableList<String> = mutableListOf()
     var serial:String=""
+    private var docketBoxes: List<DocketBoxInfo> = emptyList()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -65,16 +72,21 @@ class LocalUnLoading : AppCompatActivity() , LocalUnLoadDocketAdapter.OnItemClic
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+        binding.ivBack.setOnClickListener { finish() }
         serial= Utils.getSerial(this)
         textToSpeech = TextToSpeech(this, this)
         dao = (application as AtomOpsApp).database.getLocalLoadbarcode()
         binding.rvDockets.adapter = docketAdapter
         tripId=   intent.getStringExtra("tripId").toString()
+        /*lifecycleScope.launch {
+            dao.deleteByTripId(tripId)
+        }*/
         loadTripLoading(tripId)
         binding.tvTripId.setText("Unloading:"+tripId)
         binding.barcodeText.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_UNSPECIFIED) {
-                val value = binding.barcodeText.text.toString().trim()
+                var value = binding.barcodeText.text.toString().trim()
+                value= Utils.revertTransform(value)
                 if (value.length > 5) {
                     if(boxes.contains(value)) {
                         speak("Duplicate Barcode")
@@ -213,7 +225,8 @@ class LocalUnLoading : AppCompatActivity() , LocalUnLoadDocketAdapter.OnItemClic
                     if (data != null) {
                         tripUnloading = data
                         collectDocketsAndBoxes(data)   // fills docketlist + docketBoxIds (all boxes come in this API)
-                        saveBoxesToDb()                // insert new boxes as "Unscanned" in LocalLoadbarcode
+                        loadDocketBoxes(docketlist)
+                        //  saveBoxesToDb()                // insert new boxes as "Unscanned" in LocalLoadbarcode
                         bindSummary()
                         refreshLocalSummary()          // counters + docket list from DB
                     } else {
@@ -262,6 +275,88 @@ class LocalUnLoading : AppCompatActivity() , LocalUnLoadDocketAdapter.OnItemClic
     }
 
     /** Insert boxes that are not in the local DB yet. Already-saved boxes keep their scan / short / damage state. */
+    private suspend fun loadDocketBoxes(docketNos: List<String>) {
+        val request = DocketBoxesRequest(
+            companyCode = AtomOpsApp.getPreferences(Constants.COMP_CODE, "").toIntOrNull() ?: 0,
+            docketNos = docketNos,
+            eventType = "IN_SCAN",
+            scanStage = "UNLOAD",
+            branchCode = AtomOpsApp.getPreferences(Constants.BCODE, "")
+        )
+        val res = serviceinterface.getDocketBoxes(
+            auth = "Bearer " + AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""),
+            request = request
+        )
+
+        if (res.isSuccessful) {
+            docketBoxes = res.body()?.data?.dockets ?: emptyList()
+
+            // 1. Codes already stored in DB for this trip (for dedupe insert)
+            val existingBoxCodes = dao.getExistingBoxCodes(tripId).toHashSet()
+
+            // 2. Codes that are ALREADY SCANNED (for duplicate-scan block)
+            boxes.clear()
+            boxes.addAll(dao.getScannedBoxCodes(tripId))
+
+            val itemsToInsert = mutableListOf<LocalLoadbarcode>()
+
+            for (docket in docketBoxes) {
+                for (box in docket.boxes.orEmpty()) {
+                    val boxCode = box.boxCode ?: continue
+                    if (box.voided) continue           // voided box: never needs scanning
+
+                    if (boxCode in existingBoxCodes) {
+                        existingBoxCodes.add(boxCode)
+                        continue                       // already in DB → don't insert again
+                    }
+                    else if(box.status.equals("DELIVERED",true)){
+                        continue
+                    }
+                    else if(box.scanAction.equals("SCAN",true)){
+                        itemsToInsert.add(
+                            LocalLoadbarcode(
+                                tripId     = tripId,
+                                barcodebox = boxCode,
+                                docket     = docket.docketNo,
+                                scanStatus = "Unscanned",
+                                scanAt     = "",
+                                scanId     = "",
+                                eventId    = ""
+                            )
+                        )
+                        existingBoxCodes.add(boxCode)
+                    }
+                    else if(box.scanAction.equals("ALREADY_SCANNED",true)||box.scanActionReason.equals("SCAN",true)){
+                        itemsToInsert.add(
+                            LocalLoadbarcode(
+                                tripId     = tripId,
+                                barcodebox = boxCode,
+                                docket     = docket.docketNo,
+                                scanStatus = "Scanned",
+                                scanAt     = box.lastMovement!!.scannedAt,
+                                scanId     = Utils.GenrateUUID(),
+                                eventId    = box.lastMovement!!.scanEventId.toString()
+                            )
+                        )
+                        existingBoxCodes.add(boxCode)      // dedupe within response
+                    }
+
+
+                }
+            }
+
+            if (itemsToInsert.isNotEmpty()) dao.insertAll(itemsToInsert)
+            refreshLocalSummary()                 // counters + docket rows (scanned/total) from the DB
+            binding.tvscannedbarcode.text = boxes.size.toString()
+        } else {
+            try{
+                Utils.showDialog(this@LocalUnLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
+            }catch (e:Exception){
+                Utils.gettrycatcherror(this@LocalUnLoading,e)
+            }
+            // Utils.showDialog(this@LocalLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
+        }
+    }
     private suspend fun saveBoxesToDb() {
         val existingBoxCodes = dao.getExistingBoxCodes(tripId).toHashSet()
 
@@ -292,18 +387,16 @@ class LocalUnLoading : AppCompatActivity() , LocalUnLoadDocketAdapter.OnItemClic
 
     /** Docket rows with LOCAL scan progress, so the list updates after every scan. */
     private suspend fun refreshDocketList() {
-        val rows = dao.getByTrip(tripId)
-        val scannedByDocket = rows
-            .filter { it.scanStatus.equals("Scanned", true) }
-            .groupingBy { it.docket.orEmpty() }
-            .eachCount()
+        val rowsByDocket = dao.getByTrip(tripId).groupBy { it.docket.orEmpty() }
 
         docketAdapter.submitDockets(
             docketlist.map { docketNo ->
+                val rows = rowsByDocket[docketNo].orEmpty()
                 UnloadDocketRow(
                     docketNo     = docketNo,
-                    boxIds       = docketBoxMap[docketNo].orEmpty(),
-                    scannedBoxes = scannedByDocket[docketNo] ?: 0
+                    // boxes saved in the DB for this docket; fall back to getTripUnLoading's list
+                    boxIds       = rows.mapNotNull { it.barcodebox }.ifEmpty { docketBoxMap[docketNo].orEmpty() },
+                    scannedBoxes = rows.count { it.scanStatus.equals("Scanned", true) }
                 )
             }
         )
@@ -462,7 +555,7 @@ class LocalUnLoading : AppCompatActivity() , LocalUnLoadDocketAdapter.OnItemClic
                         if (body?.status == "SUCCESS") {
                             var errors = ""
                             for (r in body.data?.results.orEmpty()) {
-                                if (r.outcome == "APPLIED" || r.outcome == "APPLIED_IDEMPOTENT") {
+                                if (r.outcome == "APPLIED" ||r.outcome == "OUT_OF_SEQUENCE" || r.outcome == "APPLIED_IDEMPOTENT") {
                                     // box accepted
                                 } else {
                                     errors += r.boxCode + " " + r.outcome + " " + r.boxStatus.toString() + "\n"
@@ -493,7 +586,7 @@ class LocalUnLoading : AppCompatActivity() , LocalUnLoadDocketAdapter.OnItemClic
     }
 
 
-    private fun submitBulk(result: List<Result>) {
+    private fun submitBulk(result: List<Result> = emptyList()) {
         ShowDailog()
         lifecycleScope.launch {
 
@@ -582,115 +675,7 @@ class LocalUnLoading : AppCompatActivity() , LocalUnLoadDocketAdapter.OnItemClic
                 )
 
                 if (res.isSuccessful) {
-                    Utils.showDialog(this@LocalUnLoading, "Success", "Saved successfully", R.drawable.ic_check_circle_green) {
-                        setResult(RESULT_OK)
-                        startActivity(Intent(this@LocalUnLoading, LocalTripAct::class.java))
-                        finish()
-                    }
-                    Toast.makeText(this@LocalUnLoading, "Saved successfully", Toast.LENGTH_SHORT).show()
-                   // if (allAccounted) confirmCloseLoading()
-                } else {
-                    try{
-                        Utils.showDialog(this@LocalUnLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
-                    }catch (e:Exception){
-                        Utils.gettrycatcherror(this@LocalUnLoading,e)
-                    }
-                    //Utils.showDialog(this@LocalUnLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
-                }
-            } catch (e: Exception) {
-                Utils.gettrycatcherror(this@LocalUnLoading, e)
-            } finally {
-                DismissDialog()
-            }
-        }
-    }
-    private fun submitBulk() {
-        ShowDailog()
-        lifecycleScope.launch {
-
-
-            try {
-
-
-                val rows = dao.getByTrip(tripId)   // all LocalLoadbarcode rows for this trip
-
-                if (rows.isEmpty()) {
-                    Toast.makeText(this@LocalUnLoading, "Nothing to submit", Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
-
-                val items      = mutableListOf<BulkItem>()
-                val exceptions = mutableListOf<BulkException>()
-
-                for (row in rows) {
-                    val docketNo = row.docket.orEmpty()
-                    val boxId    = row.barcodebox.orEmpty()
-                    if (docketNo.isBlank() || boxId.isBlank()) continue
-
-                    val isScanned = row.scanStatus.equals("Scanned", true)
-                    val isDamage  = row.isDamage.equals("Damage", true)
-                    val isShort   = row.shortremarks.isNotBlank()
-
-                    // ✅ items[]  → every SCANNED box (damaged boxes are ALSO scanned)
-                    if (isScanned) {
-                        items.add(
-                            BulkItem(
-                                docketNo     = docketNo,
-                                boxId        = boxId,
-                                publicScanId = row.eventId.orEmpty()
-                            )
-                        )
-                    }
-
-                    // ✅ exceptions[]  → DAMAGED_BOX  (damaged boxes can also be in items)
-                    if (isDamage) {
-                        exceptions.add(
-                            BulkException(
-                                docketNo      = docketNo,
-                                boxId         = boxId,
-                                exceptionType = "DAMAGED_BOX",
-                                reason        = row.damageremarks.ifBlank { "damaged" },
-                                publicScanId  = row.scanId.orEmpty().ifBlank { null }
-                            )
-                        )
-                    }
-
-                    // ✅ exceptions[]  → BOX_MISSING  (short, not scanned)
-                    if (isShort && !isScanned) {
-                        exceptions.add(
-                            BulkException(
-                                docketNo      = docketNo,
-                                boxId         = boxId,
-                                exceptionType = "BOX_MISSING",
-                                reason        = row.shortremarks.ifBlank { "not at the dock" },
-                                publicScanId  = null
-                            )
-                        )
-                    }
-                }
-
-                if (items.isEmpty() && exceptions.isEmpty()) {
-                    Toast.makeText(this@LocalUnLoading, "Nothing to submit", Toast.LENGTH_SHORT).show()
-                    return@launch
-                }                // ✅ "complete" only when EVERY box is scanned OR short
-                val allAccounted = rows.all {
-                    it.scanStatus.equals("Scanned", true) ||
-                            it.shortremarks.isNotBlank()
-                }
-
-                val res = serviceinterface.submitBulkUnLoading(
-                    auth        = "Bearer " + AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""),
-                    tripNo      = tripId,
-                    companyCode = AtomOpsApp.getPreferences(Constants.COMP_CODE, ""),
-                    request = BulkLoadingRequest(
-                        closeIfComplete = allAccounted,
-                        actor           = AtomOpsApp.getPreferences(Constants.EMP_ID, ""),
-                        items           = items,
-                        exceptions      =if(exceptions.isEmpty()) null else exceptions
-                    )
-                )
-
-                if (res.isSuccessful) {
+                    dao.deleteByTripId(tripId)
                     Utils.showDialog(this@LocalUnLoading, "Success", "Saved successfully", R.drawable.ic_check_circle_green) {
                         setResult(RESULT_OK)
                         startActivity(Intent(this@LocalUnLoading, LocalTripAct::class.java))
@@ -713,10 +698,6 @@ class LocalUnLoading : AppCompatActivity() , LocalUnLoadDocketAdapter.OnItemClic
             }
         }
     }
-
-
-
-
     // ================= 3. Activity (LocalLoading) =================
     private fun confirmCloseLoading() {
         AlertDialog.Builder(this)
@@ -747,7 +728,7 @@ class LocalUnLoading : AppCompatActivity() , LocalUnLoadDocketAdapter.OnItemClic
                     }catch (e:Exception){
                         Utils.gettrycatcherror(this@LocalUnLoading,e)
                     }
-                  //  Utils.showDialog(this@LocalUnLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
+                    //  Utils.showDialog(this@LocalUnLoading, "error", res.errorMessage(), R.drawable.ic_baseline_error_24)
                 }
             } catch (e: Exception) {
                 Utils.gettrycatcherror(this@LocalUnLoading, e)

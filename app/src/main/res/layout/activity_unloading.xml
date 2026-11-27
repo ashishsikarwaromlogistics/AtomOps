@@ -59,6 +59,7 @@
                 android:layout_marginEnd="@dimen/_10sdp"
                 android:contentDescription="Search"
                 android:src="@drawable/ic_search"
+                android:visibility="gone"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@id/ivProfile"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -74,6 +75,7 @@
                 app:layout_constraintTop_toTopOf="parent"
                 app:shapeAppearanceOverlay="@style/CircleImage"
                 app:strokeColor="@android:color/white"
+                android:visibility="gone"
                 app:strokeWidth="2dp" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 

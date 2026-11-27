@@ -70,6 +70,8 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 import java.util.Locale
 
+
+
 class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     lateinit var binding: ActivityLoadingBinding
@@ -88,7 +90,7 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
     var selectedPosition = 0
 
     val appprogress: AppProgressDialog by lazy { AppProgressDialog(this) }
-
+    var code=""
     private fun ShowDailog() {
         if (!appprogress.isShowing) appprogress.show()
     }
@@ -119,6 +121,7 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
             insets
         }
 
+        code = intent.getStringExtra("code").toString()
         tripId = intent.getStringExtra("tripid").toString()
         binding.tvTripId.setText(tripId)
         serial = Utils.getSerial(this)
@@ -146,13 +149,13 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         binding.save.setOnClickListener {
             getManifestProgress()
-             }
+        }
 
         binding.barcodeText.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_UNSPECIFIED) {
                 var value = binding.barcodeText.text.toString().trim()
                 if (value.length > 5) {
-                  //  value= Utils.revertTransform(value)
+                    value= Utils.revertTransform(value)//.replace("-","")
                     Log.d("ashishsikarwar",value)
                     if (boxes.contains(value)) {
                         speak("Duplicate Barcode")
@@ -175,7 +178,6 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
     // ------------------------------------------------------------------
     private fun Generateevenidbulk() {
         if (!Utils.haveInternet(this)) return
-
         ShowDailog()
         lifecycleScope.launch {
             try {
@@ -200,6 +202,15 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                     }
                 }
 
+                if(items.size==0){
+                  val isemptyevnt=  barcodedao.hasEmptyEventId(tripId)
+                    DismissDialog()
+                    if(!isemptyevnt){
+                        saveData()
+                    }
+
+                    return@launch
+                }
                 val mod = BulkIdGenMod(
                     companyCode = AtomOpsApp.getPreferences(Constants.COMP_CODE, "").toInt(),
                     items = items
@@ -344,9 +355,11 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
             if (i == selectedPosition) {
                 tab.setBackgroundResource(R.drawable.bg_tab_selected)
                 tab.setTextColor(android.graphics.Color.WHITE)
+                tab.alpha = 1f
             } else {
                 tab.background = null
                 tab.setTextColor(ContextCompat.getColor(tab.context, R.color.text_primary))
+                tab.alpha = 0.4f        // looks disabled: locked until the current manifest is closed
             }
         }
     }
@@ -354,7 +367,7 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun setupManifestTabs() {
         lifecycleScope.launch {
             manifestList = tripDetailsDao.getByTripandmanifiest(tripId, AtomOpsApp.getPreferences(
-                Constants.BCODE,""))
+                Constants.BCODE,""),"CREATED")
             binding.llManifestTabs.removeAllViews()
             selectedPosition = 0
 
@@ -381,13 +394,32 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                     )
 
                     setOnClickListener {
+                        // Only the current manifest can be opened; the next one unlocks after LoadingClose()
+                        if (index != selectedPosition) {
+                            speak("Complete first manifest")
+                            Utils.showDialog(
+                                this@LoadingAct, "Alert",
+                                "Please complete manifest ${manifestList[selectedPosition]} first",
+                                R.drawable.ic_baseline_error_24
+                            )
+                            return@setOnClickListener
+                        }
                         selectTab(index)
                         onManifestSelected(manifest, index)
                     }
                 }
                 binding.llManifestTabs.addView(textView)
             }
+            if(manifestList.isEmpty()){
 
+              val  mylist = tripDetailsDao.checkByTripandmanifiest(tripId)
+                if(mylist.isNotEmpty())
+                Utils.showDialog(this@LoadingAct,"Alert","All Manifest are scanned. do you want to close Loading",R.drawable.ic_baseline_error_24,{
+                    if (Utils.haveInternet(this@LoadingAct))
+                        if(code.equals("MARK_READY")) showReadyForDispatchDialog()
+                         else  addseal()  //"GATE_OUT"
+                })
+            }
             if (manifestList.isNotEmpty()) {
                 selectTab(0)
                 // called once, for the first tab only
@@ -447,15 +479,18 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
             // 2) Sync boxes from the server, then redraw from the DB
             if (!Utils.haveInternet(this@LoadingAct)) return@launch
             try {
+                ShowDailog()
                 val mod = FIndBoxMod(
                     AtomOpsApp.getPreferences(Constants.COMP_CODE, "").toIntOrNull() ?: 0,
-                    docketlisttable.map { it.docketNo }
+                    docketlisttable.map { it.docketNo },
+                    "OUT_SCAN","LOAD",AtomOpsApp.getPreferences(Constants.BCODE, "")
                 )
                 val response = ApiClient.getRetrofitclient()
                     .create(ServiceInterface::class.java)
                     .getAllboxes("Bearer " + AtomOpsApp.getPreferences(Constants.JWTTOKEN, ""), mod)
 
-                ensureActive()                                  // user switched tab while waiting
+                ensureActive()
+                // user switched tab while waiting
                 if (manifest != currentManifest) return@launch
 
                 if (!response.isSuccessful) { showError(response.errorMessage()); return@launch }
@@ -470,9 +505,10 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                 for (d in data.dockets) {
                     for (b in d.boxes) {
                         if (b.boxCode in existing) continue
-                       // d.boxes.get(0).currentBranch
+                        // d.boxes.get(0).currentBranch
 
-                        if (!b.voided && (b.status.equals("PICKED") || b.status.equals("AT_HUB")) && b.currentBranch.equals(
+                        //if (!b.voided && (b.status.equals("PICKED") || b.status.equals("AT_HUB")) && b.currentBranch.equals(
+                        if (!b.voided && ( b.scanAction.equals("SCAN")) && b.currentBranch.equals(
                                 AtomOpsApp.getPreferences(Constants.BCODE, ""))){
                             Log.d("ashishsikarwar",b.boxCode+"="+ Utils.transform(b.boxCode))
                             barcodedao.insert(
@@ -490,12 +526,37 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                                     isScan = false,
                                     eventid = "",
                                     clientRef = Utils.GenrateUUID(),
-                                    boxloaded = false
+                                    boxloaded = true
                                 )
                             )
                             existing.add(b.boxCode)
                         }
-                       else continue
+                        else if (!b.voided && ( b.scanAction.equals("ALREADY_SCANNED")) && b.currentBranch.equals(
+                                AtomOpsApp.getPreferences(Constants.BCODE, ""))){
+                            Log.d("ashishsikarwar",b.boxCode+"="+ Utils.transform(b.boxCode))
+
+                            barcodedao.insert(
+                                BarcodeTable(
+                                    docketno = d.docketNo,
+                                    box = b.boxCode,
+                                    timeScan = "",
+                                    status = b.status,
+                                    voided = b.voided,
+                                    manifest = manifest,
+                                    damage = "",
+                                    isshort = "",
+                                    damageurl = "",
+                                    tripId = tripId,
+                                    isScan = true,
+                                    eventid = b.lastMovement.scanEventId,
+                                    clientRef = Utils.GenrateUUID(),
+                                    boxloaded = true
+                                )
+                            )
+                            existing.add(b.boxCode)
+                        }
+
+                        else continue
 
 
 
@@ -524,9 +585,12 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
 
                 ensureActive()
                 refreshFromDb(manifest)
+                DismissDialog()
             } catch (e: CancellationException) {
+                DismissDialog()
                 throw e                                         // normal when switching tabs, not an error
             } catch (e: Exception) {
+                DismissDialog()
                 Utils.gettrycatcherror(this@LoadingAct, e)
             }
         }
@@ -548,7 +612,7 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
         // keep scroll position when the list is rebuilt
         val state = binding.rvDockets.layoutManager?.onSaveInstanceState()
         scanapdater = ScanAdapter(docketlist, onItemClick = {
-          //  val context = holder.itemView.context
+            //  val context = holder.itemView.context
 
             val intent = Intent(this@LoadingAct, BoxDetailsAct::class.java)
             intent.putExtra("docketno", it.docketNo)
@@ -747,11 +811,7 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
         ShowDailog()
         lifecycleScope.launch {
             try {
-                if (!barcodedao.areAllBoxesLoaded(tripId)) {
-                    DismissDialog()
-                    showError("Please load all boxes of the manifest")
-                    return@launch
-                }
+
 
                 val mod = CloseMod(
                     AtomOpsApp.getPreferences(Constants.EMP_ID, ""),
@@ -950,7 +1010,9 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
             .setCancelable(false)
             .create()
 
-        btnCancel.setOnClickListener { dialog.dismiss() }
+        btnCancel.setOnClickListener { dialog.dismiss()
+        finish()
+        }
 
         btnConfirm.setOnClickListener {
             val checklist = Checklist(
@@ -966,7 +1028,7 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                 "GENERAL",
                 AtomOpsApp.getPreferences(Constants.COMP_CODE, "").toInt()
             )
-            dialog.dismiss()
+
 
             lifecycleScope.launch {
                 try {
@@ -984,6 +1046,10 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                     if (resp.isSuccessful) {
                         val body = resp.body()
                         if (body?.status == "SUCCESS") {
+                            dialog.dismiss()
+
+
+
                             Utils.showDialog(
                                 this@LoadingAct, "Success", bodyMessage(body.message),
                                 R.drawable.green_check, {
@@ -1058,7 +1124,7 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                         }
 
                         // All boxes loaded and manifest can be closed → offer save
-                        if(body.data.progress.closed==true){
+                        /*if(body.data.progress.closed==true){
                             Utils.showDialog(
                                 this@LoadingAct, "Alert", "This manifest already close . plz select another manifest",
                                 R.drawable.ic_baseline_error_24
@@ -1078,7 +1144,86 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
                         }
                         else{
                             LaodingImage()
+                        }*/
+                        //Loading
+
+
+                        when {
+                            // This branch is not this manifest's source: nothing to load here
+                            data.stage != "LOADING" -> Utils.showDialog(
+                                this@LoadingAct, "Alert",
+                                "This manifest is not loaded at your branch. Please select another manifest.",
+                                R.drawable.ic_baseline_error_24
+                            )
+
+                            data.status == "CANCELLED" -> Utils.showDialog(
+                                this@LoadingAct, "Alert",
+                                "This manifest is cancelled. Please select another manifest.",
+                                R.drawable.ic_baseline_error_24
+                            )
+
+                            // Loading done just now: move on to the next manifest if present
+                            data.status == "LOADED" -> {
+                                // switch to the next manifest
+                            }
+
+                            // Already travelled / unloaded
+                            progress.closed == true -> Utils.showDialog(
+                                this@LoadingAct, "Alert",
+                                "This manifest is already closed. Please select another manifest.",
+                                R.drawable.ic_baseline_error_24
+                            )
+
+                            // Loading not started yet
+                            data.status == "CREATED" -> Generateevenidbulk()
+
+                            // Loading in progress
+                            data.status == "LOADING" -> when {
+                                progress.canClose == true -> LoadingClose()
+
+                                // Boxes still to scan or mark short
+                                progress.boxesPending > 0 -> saveData()
+
+                                // All boxes done, 100% photo still needed
+                                progress.closeBlockers!!.contains("LOADING_PHOTO_REQUIRED") -> LaodingImage()
+
+                                // Any other blocker the server reports (e.g. BOXES_UNACCOUNTED)
+                                else -> Utils.showDialog(
+                                    this@LoadingAct, "Alert",
+                                    "Cannot close loading: ${progress.closeBlockers.joinToString()}",
+                                    R.drawable.ic_baseline_error_24
+                                )
+                            }
+
+                            else -> Utils.showDialog(
+                                this@LoadingAct, "Alert",
+                                "Unexpected manifest status: ${data.status}",
+                                R.drawable.ic_baseline_error_24
+                            )
                         }
+
+                        /*    if (body.data.progress.closed == true) {
+                                Utils.showDialog(
+                                    this@LoadingAct,
+                                    "Alert",
+                                    "This manifest is already closed. Please select another manifest.",
+                                    R.drawable.ic_baseline_error_24
+                                )
+                            } else if (body.data.progress.canClose==true) {
+                                LoadingClose()
+                            } else if (body.data.status.toString().equals("CREATED")) {
+                                Generateevenidbulk()
+                            } else if (body.data.status.toString().equals("LOADED")) {
+                                // Manifest work is over. Switch to the next manifest if present.
+                            } else {
+                                // Manifest is still LOADING but cannot be closed.
+                                if (body.data.progress.boxesPending > 0) {
+                                    saveData()
+                                } else if ((body.data.progress.photo100Required==true)
+                                    && body.data.progress.photo100 == null) {
+                                    LaodingImage()
+                                }
+                            }*/
 
 
 
@@ -1125,15 +1270,15 @@ class LoadingAct : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun findShartandDamage(){
-     lifecycleScope.launch {
-         /*val manifest: String,
-         @ColumnInfo(name = "trip_id")
-         val tripId: String,*/
+        lifecycleScope.launch {
+            /*val manifest: String,
+            @ColumnInfo(name = "trip_id")
+            val tripId: String,*/
 
-         val c = barcodedao.getShortDamageCount(currentManifest)
-         binding.tvShort.text  = c.shortCount.toString()
-         binding.tvDamage.text = c.damageCount.toString()
-     }
+            val c = barcodedao.getShortDamageCount(currentManifest)
+            binding.tvShort.text  = c.shortCount.toString()
+            binding.tvDamage.text = c.damageCount.toString()
+        }
     }
 
     override fun onResume() {

@@ -30,7 +30,7 @@ package com.example.atomops.models.manifiests
         val boxesScanned: Int?,
         val boxesShort: Int?,
         val boxesExcess: Int?,
-        val boxesPending: Int?,
+        val boxesPending: Int,
         val photo50: PhotoInfo?,
         val photo100: PhotoInfo?,
         val photo100Required: Boolean?,

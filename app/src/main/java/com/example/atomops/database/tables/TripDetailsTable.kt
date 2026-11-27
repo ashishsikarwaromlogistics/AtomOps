@@ -12,6 +12,7 @@ data class TripDetailsTable(
     // Manifest level
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
+    val manifeststatus: String,
     val manifestNo: String,
     val legSequence: Int = 0,
     val sourceBranch: String? = null,

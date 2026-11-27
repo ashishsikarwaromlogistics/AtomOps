@@ -26,6 +26,7 @@ class TripAdapter(
             tvDock.text = t.currentDockNo?.toString()?.takeIf { it.isNotBlank() } ?: "-"
             tvVehicle.text = t.vehicleNo ?: "-"
             root.setOnClickListener { onItemClick(t) }
+            ivMore.setOnClickListener { onMoreClick(t, it) }
             //   ivMore.setOnClickListener { onMoreClick(t, it) }
         }
     }

@@ -271,11 +271,7 @@ public class Utils {
         return  UUID.randomUUID().toString();
     }
 
-    private static final int[] MAPPING = {6, 9, 5, 7, 0, 3, 1, 4, 2, 8};
-    private static final int[] REVERSE = new int[10];
-    static {
-        for (int i = 0; i < MAPPING.length; i++) REVERSE[MAPPING[i]] = i;
-    }
+
 
     // encrypt: digit d -> MAPPING[d]
     public static String transform(String input) {
@@ -288,11 +284,51 @@ public class Utils {
                 sb.append(c); // letters and symbols stay unchanged
             }
         }
-        return sb.toString();
+        return sb.toString().replace("-","");
     }
 
-    // decrypt: MAPPING[d] -> d
+    private static final int[] MAPPING = {6, 9, 5, 7, 0, 3, 1, 4, 2, 8};
+    private static final int[] REVERSE = new int[10];
+
+    static {
+        for (int i = 0; i < MAPPING.length; i++) {
+            REVERSE[MAPPING[i]] = i;
+        }
+    }
+
     public static String revertTransform(String input) {
+        if (input == null) return "";
+
+        StringBuilder sb = new StringBuilder(input.length());
+
+        for (char c : input.toCharArray()) {
+            if (c >= '0' && c <= '9') {
+                sb.append(REVERSE[c - '0']);
+            } else {
+                sb.append(c);
+            }
+        }
+
+        String result = sb.toString();
+
+        // Add hyphen before the last B
+        int index = result.lastIndexOf('B');
+
+        if (index > 0) {
+            result = result.substring(0, index) + "-" + result.substring(index);
+        }
+
+        return result;
+    }
+
+
+    // decrypt: MAPPING[d] -> d
+  /*  private static final int[] MAPPING = {6, 9, 5, 7, 0, 3, 1, 4, 2, 8};
+    private static final int[] REVERSE = new int[10];
+    static {
+        for (int i = 0; i < MAPPING.length; i++) REVERSE[MAPPING[i]] = i;
+    }
+    *//*public static String revertTransform(String input) {
         if (input == null) return "";
         StringBuilder sb = new StringBuilder(input.length());
         for (char c : input.toCharArray()) {
@@ -303,6 +339,6 @@ public class Utils {
             }
         }
         return sb.toString();
-    }
+    }*/
 
 }

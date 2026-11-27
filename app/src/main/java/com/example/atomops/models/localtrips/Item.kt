@@ -1,5 +1,7 @@
 package com.example.atomops.models.localtrips
 
+import java.math.BigInteger
+
 data class Item(
     val ba_code: Any,
     val branch_code: String,
@@ -11,7 +13,7 @@ data class Item(
     val driver_code: Int,
     val driver_name: String,
     val driver_phone: Any,
-    val loader_code: Int,
+    val loader_code: BigInteger,
     val loader_name: Any,
     val priority: Any,
     val route_name: Any,

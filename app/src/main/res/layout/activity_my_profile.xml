@@ -332,6 +332,27 @@
                 android:layout_marginEnd="16dp"
                 android:orientation="vertical">
 
+                <!-- Access Branches -->
+                <RelativeLayout style="@style/ProfileRow">
+
+                    <TextView
+                        android:id="@+id/tvBranchesLabel"
+                        style="@style/ProfileLabel"
+                        android:text="Access Branches" />
+
+                    <Spinner
+                        android:id="@+id/spBranches"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:minWidth="120dp"
+                        android:spinnerMode="dropdown" />
+                </RelativeLayout>
+
+                <View style="@style/ProfileDivider" />
+
+
                 <!-- Employee ID -->
                 <RelativeLayout style="@style/ProfileRow">
 

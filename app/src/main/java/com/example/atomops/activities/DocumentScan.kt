@@ -145,7 +145,10 @@ class DocumentScan : AppCompatActivity() {
             Toast.makeText(this, "Open scanner", Toast.LENGTH_SHORT).show()
         }
         binding.btnSubmit.setOnClickListener {
-            callSubmitApi()
+           Utils.showDialog2(this,"save ","are you sure to save this Document",R.drawable.ic_baseline_error_24,{
+               callSubmitApi()
+           },{})
+          //  callSubmitApi()
         }
     }
 

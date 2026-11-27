@@ -242,6 +242,16 @@ interface LocalLoadbarcodeDao {
     suspend fun clearShort(barcodebox: String, tripId: String): Int
 
 
+    @Query("""
+    SELECT CASE 
+        WHEN COUNT(*) = 0 THEN 1
+        WHEN SUM(CASE WHEN event_id IS NULL OR event_id = '' THEN 1 ELSE 0 END) > 0 THEN 0
+        ELSE 1
+    END
+    FROM LocalLoadbarcode 
+    WHERE trip_id = :tripId
+""")
+    suspend fun areAllEventIdsFilled(tripId: String): Boolean
 
 
 }

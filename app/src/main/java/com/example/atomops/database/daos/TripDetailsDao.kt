@@ -17,6 +17,9 @@ interface TripDetailsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: TripDetailsTable): Long
 
+    @Query("UPDATE TripDetailsTable SET manifeststatus = :manifestStatus WHERE manifestNo = :manifestNo")
+    suspend fun updaterunningManifestStatus(manifestNo: String, manifestStatus: String): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(items: List<TripDetailsTable>)
 
@@ -39,13 +42,26 @@ interface TripDetailsDao {
     @Query("""
     SELECT manifestNo
     FROM TripDetailsTable
-    WHERE trip_id = :tripId and sourceBranch=:sourceBranch
+    WHERE trip_id = :tripId and sourceBranch=:sourceBranch and (manifeststatus=:manifeststatus or manifeststatus='LOADING')
     GROUP BY manifestNo 
     ORDER BY MIN(loadingOrder) IS NULL, MIN(loadingOrder) ASC
 """)
     suspend fun getByTripandmanifiest(
         tripId: String,
-        sourceBranch: String
+        sourceBranch: String,
+        manifeststatus: String
+    ): List<String>
+
+
+    @Query("""
+    SELECT manifestNo
+    FROM TripDetailsTable
+    WHERE trip_id = :tripId 
+    GROUP BY manifestNo 
+    ORDER BY MIN(loadingOrder) IS NULL, MIN(loadingOrder) ASC
+""")
+    suspend fun checkByTripandmanifiest(
+        tripId: String
     ): List<String>
 
 

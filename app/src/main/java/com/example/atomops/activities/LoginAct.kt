@@ -16,6 +16,8 @@ import com.example.atomops.AppProgressDialog
 import com.example.atomops.AtomOpsApp
 import com.example.atomops.Constants
 import com.example.atomops.R
+import com.example.atomops.database.daos.AcessBranchesDao
+import com.example.atomops.database.daos.UserDao
 import com.example.atomops.databinding.ActivityLoginBinding
 import com.example.atomops.models.login.DeviceInfo
 import com.example.atomops.models.login.LoginMod
@@ -39,12 +41,13 @@ class LoginAct : BaseActivity() {
             appprogress.dismiss()
         }
     }
+    lateinit var dao: AcessBranchesDao
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         binding= DataBindingUtil.setContentView(this,R.layout.activity_login)
-
+        dao = (application as AtomOpsApp).database.acessBranchesDao()
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
@@ -94,6 +97,13 @@ class LoginAct : BaseActivity() {
                     if (resp?.isSuccessful == true && resp.body()?.status == "success") {
                         val data = resp.body()?.data
                         if (data != null) {
+
+                            val branchlist=data.user.accessBranchCodes
+                            dao.deleteAll()
+                            for(i in branchlist){
+                                dao.insert(com.example.atomops.database.tables.AcessBranches(branch = i))
+                            }
+
                             // Save tokens securely, then navigate
                             val token = "${data.tokenType.trim()} ${data.accessToken}"
                             val payload = JwtDecoder.decodePayload(token)
@@ -160,8 +170,10 @@ class LoginAct : BaseActivity() {
                         } else {
                             showError("Login failed")
                         }
-                    } else {
-                        Utils.showDialog(this@LoginAct,"error", Utils.getHttpErrorMessage(resp!!.code(),""),R.drawable.ic_baseline_error_24)
+                    }
+
+                    else {
+                        Utils.showDialog(this@LoginAct,"error", resp!!.body()!!.message,R.drawable.ic_baseline_error_24)
                     }
                 }
                 catch (e: Exception){
@@ -179,7 +191,8 @@ class LoginAct : BaseActivity() {
     private fun validateCred() {
      lifecycleScope.launch {
          val deviceinfo= DeviceInfo(Utils.getDeviceIMEI(this@LoginAct),"Scanner", Utils.getLocalIpAddress(),"Android")
-         val mod= LoginMod(deviceinfo, password = "asdfghjkl",username = "amit.shah")
+         val mod= LoginMod(deviceinfo, password = "J%oL0U61RNJW",username = "ps3446994")
+         //val mod= LoginMod(deviceinfo, password = "asdfghjkl",username = "amit.shah")
          try {
              ShowDailog()
              val resp= ApiClient.getRetrofitclient().create(ServiceInterface::class.java).Login(mod)
@@ -188,6 +201,13 @@ class LoginAct : BaseActivity() {
                  DismissDialog()
                  val data = resp.body()?.data
                  if (data != null) {
+
+                     val branchlist=data.user.accessBranchCodes
+                     dao.deleteAll()
+                     for(i in branchlist){
+                         dao.insert(com.example.atomops.database.tables.AcessBranches(branch = i))
+                     }
+
                      // Save tokens securely, then navigate
                      val token = "${data.tokenType.trim()} ${data.accessToken}"
                      val payload = JwtDecoder.decodePayload(token)

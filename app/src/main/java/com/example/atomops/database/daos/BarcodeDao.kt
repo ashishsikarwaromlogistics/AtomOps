@@ -41,7 +41,7 @@ interface BarcodeDao {
     @Query("SELECT * FROM BarcodeTable WHERE id = :id")
     suspend fun getById(id: Int): BarcodeTable?
 
-    @Query("SELECT * FROM BarcodeTable WHERE trip_id = :tripId ORDER BY id DESC")
+    @Query("SELECT * FROM BarcodeTable WHERE trip_id = :tripId and eventid=''  ORDER BY id DESC")
     suspend fun getByTrip(tripId: String): List<BarcodeTable>
 
     @Query("SELECT * FROM BarcodeTable WHERE trip_id = :tripId ORDER BY id DESC")
@@ -206,6 +206,11 @@ interface BarcodeDao {
 
     @Query("SELECT box FROM BarcodeTable WHERE manifest = :manifest AND TRIM(IFNULL(damage, '')) != ''")
     suspend fun getDamageBoxCodes(manifest: String): List<String>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM BarcodeTable WHERE TRIM(eventid) = '' and eventid=:eventid)  a")
+    suspend fun hasEmptyEventId(eventid: String): Boolean
+
+
 
     data class ShortDamageCount(
         val shortCount: Int,

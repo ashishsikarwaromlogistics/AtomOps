@@ -1,7 +1,7 @@
 package com.example.atomops.adapters
 
- 
- 
+
+
 
 import android.view.LayoutInflater
 import android.view.View
@@ -21,6 +21,9 @@ class LocalLoadDocketAdapter(
 
     private val expanded = mutableSetOf<String>()
 
+    // docketNo -> (scanned, total) from the local DB; updated after every scan
+    private var localCounts: Map<String, Pair<Int, Int>> = emptyMap()
+
     inner class VH(val b: CustomScanBinding) : RecyclerView.ViewHolder(b.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
@@ -37,11 +40,22 @@ class LocalLoadDocketAdapter(
         val b = holder.b
 
         b.tvDocketNo.text = docketNo
-        b.tvDocketProgress.text = "${item.loadedBoxes}/${item.totalBoxes}"
 
-        // status dot: green if fully loaded, orange otherwise
+        // local scan progress when we have it, otherwise the server values
+        val local = localCounts[docketNo]
+        val isComplete: Boolean
+        if (local != null) {
+            val (scanned, total) = local
+            b.tvDocketProgress.text = "$scanned/$total"
+            isComplete = total > 0 && scanned >= total
+        } else {
+            b.tvDocketProgress.text = "${item.loadedBoxes}/${item.totalBoxes}"
+            isComplete = item.fullyAccounted == true
+        }
+
+        // green tick when every box of the docket is scanned, orange otherwise
         b.ivStatus.setImageResource(
-            if (item.fullyAccounted) R.drawable.dot_green   // use your own drawable name
+            if (isComplete) R.drawable.green_check
             else R.drawable.bg_circle_orange
         )
 
@@ -67,9 +81,9 @@ class LocalLoadDocketAdapter(
         }
 
         b.headerRow.setOnClickListener {
-           /* if (boxes.isEmpty()) return@setOnClickListener
-            if (!expanded.add(docketNo)) expanded.remove(docketNo)
-            notifyItemChanged(holder.adapterPosition)*/
+            /* if (boxes.isEmpty()) return@setOnClickListener
+             if (!expanded.add(docketNo)) expanded.remove(docketNo)
+             notifyItemChanged(holder.adapterPosition)*/
             clickitem.onItemClick(item)
         }
     }
@@ -83,6 +97,13 @@ class LocalLoadDocketAdapter(
         boxMap = map
         notifyDataSetChanged()
     }
+
+    /** docketNo -> (scanned, total) from LocalLoadbarcode. Call after every scan. */
+    fun submitLocalCounts(map: Map<String, Pair<Int, Int>>) {
+        localCounts = map
+        notifyDataSetChanged()
+    }
+
     interface OnItemClickListener {
         fun onItemClick(docket: TripDocket)
     }

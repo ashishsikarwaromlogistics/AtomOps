@@ -10,5 +10,10 @@ data class Data(
     val route: Route,
     val trip: Trip,
     val vehicle: Vehicle,
+    val nextStep: NextStep,
 
+)
+data class NextStep(
+    val code: String,
+    val message: String
 )
